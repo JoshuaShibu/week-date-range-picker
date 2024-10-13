@@ -1,10 +1,287 @@
 .App {
   text-align: center;
+  font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode';
+}
+
+.input-wrapper {
+  padding: 30px;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1), 0px 6px 16px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 500px;
+}
+.card-info {
+  padding: 0 0em 1em;
+  margin: 0;
+  font-family: "MockFlowFont";
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: start;
+  font-size: 1.4em;
+  font-weight: 600; 
+  color: #737575;
+}
+
+.input-wrapper-main {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 0px;
+  max-width: 500px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-right: 20px;
+  flex: 1;
+}
+
+.input-group > label {
+  text-align: start;
+  margin-bottom: 10px;
+}
+
+.date-range-input {
+  cursor: pointer;
+  padding: 12px 18px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.date-range-input:hover,
+.date-range-input:focus {
+  border-color: #0056b3;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.date-picker-container {
+  position: relative;
+  display: inline-block;
+}
+
+.calendar-grid {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.calendar-wrapper {
+  display: flex;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 1000;
+  background-color: white;
+  width: max-content;
+  padding: 10px;
+  gap: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15), 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.calendar-wrapper.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+.month-main-wrapper {
+  padding: 10px;
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.day {
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  color: #000;
+  transition: background-color 0.3s ease;
+}
+
+.day:hover {
+  background-color: #f0f0f0;
+}
+
+.month-label {
+  grid-column: span 7;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.day-labels {
+  display: contents;
+}
+
+.day-label {
+  text-align: center;
+  font-weight: bold;
+}
+
+.day.today {
+  background-color: #007bff;
+  color: white;
+}
+
+.day.range-highlight {
+  background-color: lightblue;
+  animation: pulse 0.5s ease-in-out;
+}
+
+.hover-highlight {
+  background-color: lightgrey;
+  z-index: 0;
+}
+
+.date-lists {
+  display: flex;
+}
+
+.startEndDiv {
+  margin: 12px;
+  display: flex;
+}
+
+.startEndDiv.items {
+  margin-right: 12px;
+}
+
+.weekend {
+  background-color: #f7f7f7;
+  color: #999;
+}
+
+.selected {
+  background-color: #007bff;
+  color: white;
+}
+
+.inactive {
+  color: #ccc;
+}
+
+.calendar-visible {
+  display: block;
 }
 
 .App-logo {
   height: 40vmin;
   pointer-events: none;
+}
+
+.calendar-footer {
+  padding: 10px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #ddd;
+  margin-top: 10px;
+}
+
+.pick-button, .reset-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.pick-button:hover, .reset-button:hover {
+  background-color: #0056b3;
+  color: white;
+}
+
+.reset-button:active {
+  background-color: #0056b3;
+  color: white;
+}
+
+.predefined-ranges {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.predefined-ranges button {
+  margin: 0 8px;
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.predefined-ranges button:hover {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.month-label {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+select {
+  padding: 8px 0;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  font-size: 16px;
+  color: #333;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  min-width: 120px;
+}
+
+select:hover {
+  border-bottom-color: #007bff;
+}
+
+select:focus {
+  border-bottom-color: #007bff;
+  box-shadow: 0px 1px 0px 0px #007bff;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+option {
+  background-color: white;
+  color: #333;
+}
+
+select:disabled {
+  border-bottom-color: #ccc;
+  color: #999;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  select {
+    font-size: 14px;
+    min-width: 100px;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -35,4 +312,40 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
