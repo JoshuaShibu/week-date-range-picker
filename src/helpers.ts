@@ -1,5 +1,17 @@
 type DateRange = [Date, Date];
 
+type colorSchemaTypes = {
+  primary: string;
+  secondary: string;
+  highlight: string;
+  hoverHighlight: string;
+  weekend: {
+    color: string,
+    backgroundColor: string;          
+  };
+  todayColor: string;
+};
+
 // Helper function: Check if a date is a weekend
 export const isWeekend = (date: Date | null) => date ? date.getDay() === 0 || date.getDay() === 6 : false;
 
@@ -77,7 +89,10 @@ export const predefinedRangesList: { label: string; range: DateRange }[] = [
   },
   {
     label: 'This Year',
-    range: [new Date(new Date().getFullYear(), 0, 1), new Date()], // Tuple with exactly 2 Dates
+    range: [
+      new Date(new Date().getFullYear(), 0, 1), // January 1st of the current year
+      new Date(new Date().getFullYear(), 11, 31), // December 31st of the current year
+    ], // Tuple with exactly 2 Dates
   },
   {
     label: 'Last Year',
@@ -91,3 +106,61 @@ export const predefinedRangesList: { label: string; range: DateRange }[] = [
     range: [new Date(1970, 0, 1), new Date()], // Tuple with exactly 2 Dates
   },
 ];
+
+
+// Utility function that applies styles based on the color schema
+export const getDayStyles = (colorSchema: colorSchemaTypes) => {
+  return (
+    day: Date,
+    today: Date,
+    isInRange: boolean | null,
+    isSelected: boolean,
+    startDate: Date | null,
+    endDate: Date | null,
+    isWeekend: boolean
+  ) => {
+    const styles: React.CSSProperties = {};
+
+    // Weekend styling
+    if (isWeekend) {
+      styles.color = colorSchema.weekend.color;
+      styles.backgroundColor = colorSchema.weekend.backgroundColor;
+    }
+
+    // Today styling
+    if (day && today.toDateString() === day.toDateString()) {
+      styles.backgroundColor = colorSchema.todayColor;
+      styles.color = '#fff'; // Assuming white text for today
+    }
+
+    // Range highlight
+    if (isInRange) {
+      styles.backgroundColor = colorSchema.highlight;
+    }
+
+    // Start date styling
+    if (startDate && day.getTime() === startDate.getTime()) {
+      styles.backgroundColor = colorSchema.primary; // Primary color for start date
+      styles.color = '#fff'; // Assuming white text for the start date
+    }
+
+    // End date styling
+    if (endDate && day.getTime() === endDate.getTime()) {
+      styles.backgroundColor = colorSchema.secondary; // Secondary color for end date
+      styles.color = '#fff'; // Assuming white text for the end date
+    }
+
+    // Selected day styling for other selected days
+    if (
+      isSelected &&
+      !isWeekend && // Prevent selected styling on weekend days
+      !(startDate && day.getTime() === startDate.getTime()) &&
+      !(endDate && day.getTime() === endDate.getTime())
+    ) {
+      styles.backgroundColor = colorSchema.highlight; // Highlight color for selected days that are not start/end
+    }
+
+    return styles;
+  };
+};
+ 

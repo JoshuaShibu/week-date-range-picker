@@ -1,6 +1,6 @@
 .App {
   text-align: center;
-  font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode';
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode';
 }
 
 .input-wrapper {
@@ -11,6 +11,7 @@
   width: 100%;
   max-width: 500px;
 }
+
 .card-info {
   padding: 0 0em 1em;
   margin: 0;
@@ -20,7 +21,7 @@
   overflow: hidden;
   text-align: start;
   font-size: 1.4em;
-  font-weight: 600; 
+  font-weight: 600;
   color: #737575;
 }
 
@@ -52,7 +53,7 @@
   box-sizing: border-box;
   font-size: 16px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 8px; /* Rounded corners */
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -77,7 +78,7 @@
   display: flex;
   position: absolute;
   top: calc(100% + 5px);
-  left: 0;
+  left: -200px;
   z-index: 1000;
   background-color: white;
   width: max-content;
@@ -109,6 +110,7 @@
   cursor: pointer;
   color: #000;
   transition: background-color 0.3s ease;
+  border-radius: 50%; /* Rounded day selection */
 }
 
 .day:hover {
@@ -134,16 +136,33 @@
 .day.today {
   background-color: #007bff;
   color: white;
+  border-radius: 50%; /* Pill-shaped today selection */
 }
 
 .day.range-highlight {
   background-color: lightblue;
   animation: pulse 0.5s ease-in-out;
+  border-radius: 50%; /* Pill-shaped range highlight */
+  z-index: 1; 
+}
+
+.range-selection {
+  background-color: lightblue;
+  border-radius: 50px; /* Ensure the range is a single pill */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-column: span 7; /* Stretch across all selected days */
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
 }
 
 .hover-highlight {
   background-color: lightgrey;
   z-index: 0;
+  border-radius: 50%; /* Pill-shaped hover highlight */
 }
 
 .date-lists {
@@ -167,6 +186,7 @@
 .selected {
   background-color: #007bff;
   color: white;
+  border-radius: 50%; /* Pill-shaped selected date */
 }
 
 .inactive {
@@ -198,6 +218,7 @@
   cursor: pointer;
   font-weight: bold;
   transition: background-color 0.2s ease, color 0.2s ease;
+  border-radius: 50px; /* Rounded button for pill shape */
 }
 
 .pick-button:hover, .reset-button:hover {
@@ -221,7 +242,7 @@
   padding: 10px 15px;
   background-color: #f8f9fa;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 50px; /* Rounded pill buttons */
   cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }

@@ -1,23 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { isWeekend, calculateWeekdaysAndWeekends, generateYearOptions, generateDays, predefinedRangesList } from './helpers';
-
+import { 
+  isWeekend, 
+  calculateWeekdaysAndWeekends, 
+  generateYearOptions, 
+  generateDays, 
+  predefinedRangesList, 
+  getDayStyles
+} from './helpers';
 
 type DateRange = [Date, Date];
 type WeekendDates = Date[];
+type colorSchemaTypes = {
+  primary: string;
+  secondary: string;
+  highlight: string;
+  hoverHighlight: string;
+  weekend: {
+    color: string,
+    backgroundColor: string;          
+  };
+  todayColor: string;
+};
 
 interface WeekdayDateRangePickerProps {
   predefinedRanges?: DateRange[];
   onChange: (range: [string[], string[]]) => void;
+  title?: string;
+  selectedTheme: colorSchemaTypes
 }
 
-const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefinedRanges = [], onChange }) => {
+const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
+  predefinedRanges = [],
+  onChange,
+  title,
+  selectedTheme
+}) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [displayedDate, setDisplayedDate] = useState(new Date());
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
-  // States to store weekdays and weekends will be used to supn out for UI or Arrays it needed.
+
   const [weekdays, setWeekdays] = useState<Date[]>([]);
   const [weekends, setWeekends] = useState<Date[]>([]);
   const [currentMonth, setCurrentMonth] = useState(displayedDate.getMonth());
@@ -27,7 +51,6 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const [selectedHoveringDates, setSelectedHoveringDates] = useState<Date[]>([]);
 
-  // State vars for each calendar
   const [startOfCurrentMonth, setStartOfCurrentMonth] = useState<Date>(
     new Date(displayedDate.getFullYear(), displayedDate.getMonth(), 1)
   );
@@ -50,7 +73,6 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
   const currentMonthYearOptions = generateYearOptions(tenYearsBack, 11);
   const nextMonthYearOptions = generateYearOptions(currentYear, 21);
 
-
   const changeCurrentYear = (year: React.SetStateAction<number>) => {
     setCurrentYear(year);
   };
@@ -67,7 +89,6 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
     const { weekdays, weekends } = calculateWeekdaysAndWeekends(startDate, endDate);
     setWeekdays(weekdays);
     setWeekends(weekends);
-    // Ensure that these dates are passed up to the parent component if necessary
     onChange([weekdays.map(day => day.toLocaleDateString('en-GB')), weekends.map(day => day.toLocaleDateString('en-GB'))]);
   };
 
@@ -83,7 +104,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
     }
   };
 
-  const handleDateClick = (selectedDate: any) => {
+  const handleDateClick = (selectedDate: Date) => {
     if (!startDate || endDate) {
       setStartDate(selectedDate);
       setEndDate(null); 
@@ -97,7 +118,6 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
     }
   };
 
-
   const handleTextFieldClick = () => {
     if (!isCalendarVisible) {
       setIsCalendarVisible(true);
@@ -110,6 +130,69 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
     }
     setIsCalendarVisible(false);
   };
+  //   return (
+  //     day: Date,
+  //     today: Date,
+  //     isInRange: boolean | null,
+  //     isSelected: boolean,
+  //     startDate: Date | null,
+  //     endDate: Date | null,
+  //     isWeekend: boolean
+  //   ) => {
+  //     const styles: React.CSSProperties = {};
+  
+  //     // Weekend styling
+  //     if (isWeekend) {
+  //       styles.color = colorSchema.weekend.color;
+  //       styles.backgroundColor = colorSchema.weekend.backgroundColor;
+  //     }
+  
+  //     // Today styling
+  //     if (day && today.toDateString() === day.toDateString()) {
+  //       styles.backgroundColor = colorSchema.todayColor;
+  //       styles.color = '#fff'; // Assuming white text for today
+  //     }
+  
+  //     // Range highlight
+  //     if (isInRange) {
+  //       styles.backgroundColor = colorSchema.highlight;
+  //     }
+  
+  //     // Selected day styling
+  //     if (
+  //       (startDate && day.getTime() === startDate.getTime()) || 
+  //       (endDate && day.getTime() === endDate.getTime())
+  //     ) {
+  //       styles.backgroundColor = colorSchema.primary;
+  //       styles.color = '#fff'; // Assuming white text for selected days
+  //     }
+  
+  //     return styles;
+  //   };
+  // };
+
+  useEffect(() => {
+    console.log('selected theme is .', selectedTheme)
+    if (isCalendarVisible) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCalendarVisible]);
+
+  useEffect(() => {
+    const updateMonthBoundaries = () => {
+      setStartOfCurrentMonth(new Date(currentYear, currentMonth, 1));
+      setEndOfCurrentMonth(new Date(currentYear, currentMonth + 1, 0));
+      setStartOfNextMonth(new Date(nextYear, nextMonth, 1));
+      setEndOfNextMonth(new Date(nextYear, nextMonth + 1, 0));
+    };
+  
+    updateMonthBoundaries();
+  }, [currentMonth, currentYear, nextMonth, nextYear, displayedDate]);
 
   const renderCalendar = () => {
     const currentMonthDays = generateDays(startOfCurrentMonth, endOfCurrentMonth);
@@ -118,33 +201,26 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
     const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
     const today = new Date();
 
-
     const updateHoveringDates = (day: Date | null) => {
       if (startDate && day) {
         let newSelectedDates: Date[] = [];
 
-        // Calculate the time difference from the start date
-        const fiveYearsInMs = 5 * 365 * 24 * 60 * 60 * 1000; // Approximation of 5 years in milliseconds
+        const fiveYearsInMs = 5 * 365 * 24 * 60 * 60 * 1000;
         const startDateMs = startDate.getTime();
         const dayMs = day.getTime();
 
-        // Check if the hovered day is more than 5 years back or in the future
         if (dayMs < (startDateMs - fiveYearsInMs) || dayMs > (startDateMs + fiveYearsInMs)) {
-          console.log("Hovered date is out of the valid range.");
-          return; // Exit early if the day is out of the 5-year range
+          return; 
         }
 
         const currentDate = new Date(startDate);
 
-        // Forward selection
         if (day >= startDate) {
           while (currentDate <= day) {
             newSelectedDates.push(new Date(currentDate));
             currentDate.setDate(currentDate.getDate() + 1);
           }
-        }
-        // Reverse selection
-        else {
+        } else {
           while (currentDate >= day) {
             newSelectedDates.push(new Date(currentDate));
             currentDate.setDate(currentDate.getDate() - 1);
@@ -185,15 +261,11 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
                   return (
                     <div
                       key={index}
-                      className={`day ${isWeekend(day) ? 'weekend' : ''} 
-                    ${isSelected ? 'hover-highlight' : ''}
-                    ${day && startDate && day.getTime() === startDate.getTime() ? 'selected' : ''} 
-                    ${day && endDate && day.getTime() === endDate.getTime() ? 'selected' : ''} 
-                    ${day && isInRange ? 'range-highlight' : ''}  
-                    ${day && today.toDateString() === day.toDateString() ? 'today' : ''}`}
-                      onClick={() => day && handleDateClick(day!)}
+                      className='day'
+                      onClick={() => handleDateClick(day!)}
                       onMouseEnter={() => updateHoveringDates(day)}
                       onMouseLeave={() => setSelectedHoveringDates([])}
+                      style={day ? getDayStyles(selectedTheme)(day, today, isInRange, isSelected, startDate, endDate, isWeekend(day)): {}}
                     >
                       {day ? day.getDate() : ''}
                     </div>
@@ -229,16 +301,11 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({ predefi
                   return (
                     <div
                       key={index}
-                      className={`day ${isWeekend(day) ? 'weekend' : ''} 
-                    ${day && startDate && day.getTime() === startDate.getTime() ? 'selected' : ''} 
-                    ${day && endDate && day.getTime() === endDate.getTime() ? 'selected' : ''} 
-                    ${day && isInRange ? 'range-highlight' : ''} 
-                    ${isSelected ? 'hover-highlight' : ''}
-                    ${day && day.getMonth() !== startOfNextMonth.getMonth() ? 'inactive' : ''} 
-                    ${day && today.toDateString() === day.toDateString() ? 'today' : ''}`}
+                      className='day'
                       onClick={() => day && handleDateClick(day!)}
                       onMouseEnter={() => updateHoveringDates(day)}
                       onMouseLeave={() => setSelectedHoveringDates([])}
+                      style={day ? getDayStyles(selectedTheme)(day, today, isInRange, isSelected, startDate, endDate, isWeekend(day)): {}}
                     >
                       {day ? day.getDate() : ''}
                     </div>
