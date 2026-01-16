@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './styles.css';
 import { 
   isWeekend, 
   calculateWeekdaysAndWeekends, 
@@ -22,7 +23,7 @@ type colorSchemaTypes = {
   todayColor: string;
 };
 
-interface WeekdayDateRangePickerProps {
+export interface WeekdayDateRangePickerProps {
   predefinedRanges?: DateRange[];
   onChange: (range: [string[], string[]]) => void;
   title?: string;
@@ -381,7 +382,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   }, [currentMonth, currentYear, nextMonth, nextYear, displayedDate]);
 
   return (
-    <div className="date-picker-container">
+    <div className="weekday-date-range-picker date-picker-container">
       <div className="input-wrapper">
         <div className="card-info">
           Please select your date range and hit pick to make a selection.

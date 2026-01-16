@@ -1,0 +1,256 @@
+.weekday-date-range-picker {
+  position: relative;
+  display: inline-block;
+}
+
+.weekday-date-range-picker .input-wrapper {
+  padding: 30px;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1), 0px 6px 16px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 500px;
+}
+
+.weekday-date-range-picker .card-info {
+  padding: 0 0em 1em;
+  margin: 0;
+  font-family: "MockFlowFont";
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: start;
+  font-size: 1.4em;
+  font-weight: 600;
+  color: #737575;
+}
+
+.weekday-date-range-picker .input-wrapper-main {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 0px;
+  max-width: 500px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.weekday-date-range-picker .input-group {
+  display: flex;
+  flex-direction: column;
+  margin-right: 20px;
+  flex: 1;
+}
+
+.weekday-date-range-picker .input-group > label {
+  text-align: start;
+  margin-bottom: 10px;
+}
+
+.weekday-date-range-picker .date-range-input {
+  cursor: pointer;
+  padding: 12px 18px;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.weekday-date-range-picker .date-range-input:hover,
+.weekday-date-range-picker .date-range-input:focus {
+  border-color: #0056b3;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.weekday-date-range-picker .calendar-grid {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.weekday-date-range-picker .calendar-wrapper {
+  display: flex;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: -200px;
+  z-index: 1000;
+  background-color: white;
+  width: max-content;
+  padding: 10px;
+  gap: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15), 0px 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.weekday-date-range-picker .calendar-wrapper.fade-out {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+.weekday-date-range-picker .month-main-wrapper {
+  padding: 10px;
+}
+
+.weekday-date-range-picker .calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.weekday-date-range-picker .day {
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  color: #000;
+  transition: background-color 0.3s ease;
+  border-radius: 50%;
+}
+
+.weekday-date-range-picker .day:hover {
+  background-color: #f0f0f0;
+}
+
+.weekday-date-range-picker .month-label {
+  grid-column: span 7;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.weekday-date-range-picker .day-labels {
+  display: contents;
+}
+
+.weekday-date-range-picker .day-label {
+  text-align: center;
+  font-weight: bold;
+}
+
+.weekday-date-range-picker .calendar-footer {
+  padding: 10px;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #ddd;
+  margin-top: 10px;
+}
+
+.weekday-date-range-picker .pick-button,
+.weekday-date-range-picker .reset-button {
+  background: none;
+  border: none;
+  color: #007bff;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  border-radius: 50px;
+}
+
+.weekday-date-range-picker .pick-button:hover,
+.weekday-date-range-picker .reset-button:hover {
+  background-color: #0056b3;
+  color: white;
+}
+
+.weekday-date-range-picker .reset-button:active {
+  background-color: #0056b3;
+  color: white;
+}
+
+.weekday-date-range-picker .predefined-ranges {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.weekday-date-range-picker .predefined-ranges button {
+  margin: 0 8px;
+  padding: 10px 15px;
+  background-color: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.weekday-date-range-picker .predefined-ranges button:hover {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.weekday-date-range-picker .month-label {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.weekday-date-range-picker select {
+  padding: 8px 0;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid #ddd;
+  font-size: 16px;
+  color: #333;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  min-width: 120px;
+}
+
+.weekday-date-range-picker select:hover {
+  border-bottom-color: #007bff;
+}
+
+.weekday-date-range-picker select:focus {
+  border-bottom-color: #007bff;
+  box-shadow: 0px 1px 0px 0px #007bff;
+}
+
+.weekday-date-range-picker select::-ms-expand {
+  display: none;
+}
+
+.weekday-date-range-picker option {
+  background-color: white;
+  color: #333;
+}
+
+.weekday-date-range-picker select:disabled {
+  border-bottom-color: #ccc;
+  color: #999;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .weekday-date-range-picker select {
+    font-size: 14px;
+    min-width: 100px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
