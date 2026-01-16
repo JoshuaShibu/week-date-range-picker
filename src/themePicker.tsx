@@ -14,7 +14,7 @@ const ThemePicker: React.FC<{ onChange: (schema: any) => void }> = ({ onChange }
 
   return (
     <div>
-      <label htmlFor="theme-picker">Select Theme:</label>
+      <label htmlFor="theme-picker">Select Theme:</label><br/>
       <select id="theme-picker" value={selectedTheme} onChange={handleThemeChange}>
         {Object.keys(colorSchemas).map((theme) => (
           <option key={theme} value={theme}>

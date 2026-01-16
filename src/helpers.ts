@@ -53,6 +53,17 @@ export const generateDays = (startOfMonth: Date, endOfMonth: Date) => {
   return days;
 };
 
+export const getIsoWeekRange = (date: Date) => {
+  const current = new Date(date);
+  current.setHours(0, 0, 0, 0);
+  const isoDay = (current.getDay() + 6) % 7; // Monday = 0, Sunday = 6
+  const start = new Date(current);
+  start.setDate(current.getDate() - isoDay);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end };
+};
+
 export const predefinedRangesList: { label: string; range: DateRange }[] = [
   {
     label: 'Today',

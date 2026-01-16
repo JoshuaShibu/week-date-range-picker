@@ -23,6 +23,7 @@ export default function Example() {
     <WeekdayDateRangePicker
       title="Custom Date Range Picker"
       selectedTheme={theme}
+      selectionMode="iso-week"
       onChange={([weekdays, weekends]) => {
         console.log('Weekdays:', weekdays);
         console.log('Weekends:', weekends);

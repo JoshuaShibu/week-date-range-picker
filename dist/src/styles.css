@@ -34,14 +34,6 @@
   gap: 20px;
 }
 
-.weekday-date-range-picker .selection-type {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 12px 0;
-}
-
 .weekday-date-range-picker .input-group {
   display: flex;
   flex-direction: column;
