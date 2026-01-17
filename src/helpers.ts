@@ -10,6 +10,7 @@ type colorSchemaTypes = {
     backgroundColor: string;          
   };
   todayColor: string;
+  usePlaceboShadow?: boolean;
 };
 
 // Helper function: Check if a date is a weekend
@@ -191,18 +192,27 @@ export const getDayStyles = (colorSchema: colorSchemaTypes) => {
     if (day && today.toDateString() === day.toDateString()) {
       styles.backgroundColor = colorSchema.todayColor;
       styles.color = '#fff'; // Assuming white text for today
+      if (colorSchema.usePlaceboShadow && !isInRange) {
+        boxShadows.push(`0 5px 10px 0 ${colorSchema.todayColor}`);
+      }
     }
 
     // Range highlight
     if (isInRange) {
       styles.backgroundColor = colorSchema.highlight;
-      boxShadows.push(`1px 0 0 0 ${colorSchema.highlight}`);
+      const rangeShadow = colorSchema.usePlaceboShadow
+        ? `0 5px 10px 0 ${colorSchema.highlight}`
+        : `1px 0 0 0 ${colorSchema.highlight}`;
+      boxShadows.push(rangeShadow);
     }
 
     // Start date styling
     if (isStart) {
       styles.backgroundColor = colorSchema.primary; // Primary color for start date
       styles.color = '#fff'; // Assuming white text for the start date
+      if (colorSchema.usePlaceboShadow) {
+        boxShadows.push(`0 5px 10px 0 ${colorSchema.primary}`);
+      }
     }
 
     // End date styling
@@ -212,6 +222,9 @@ export const getDayStyles = (colorSchema: colorSchemaTypes) => {
       // End date should override any range/hover shadows
       boxShadows.length = 0;
       boxShadows.push(`0 0 0 0 ${colorSchema.highlight}`);
+      if (colorSchema.usePlaceboShadow) {
+        boxShadows.push(`0 5px 10px 0 ${colorSchema.secondary}`);
+      }
     }
 
     // Selected day styling for other selected days
@@ -230,6 +243,12 @@ export const getDayStyles = (colorSchema: colorSchemaTypes) => {
       styles.backgroundSize = '100% 2px, 100% 2px';
       styles.backgroundPosition = '0 0, 0 100%';
       styles.backgroundRepeat = 'repeat-x';
+      if (!isInRange) {
+        const hoverShadow = colorSchema.usePlaceboShadow
+          ? `0 5px 10px 0px ${colorSchema.highlight}`
+          : `1px 0 0 0 ${colorSchema.highlight}`;
+        boxShadows.push(hoverShadow);
+      }
     }
 
     if (isFiscalStartDate) {

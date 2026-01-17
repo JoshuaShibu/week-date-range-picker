@@ -37,6 +37,12 @@ export interface WeekdayDateRangePickerProps {
   fiscalYearStartMonth?: number;
   fiscalYearStartDay?: number;
   calendars?: 1 | 2 | 3;
+  disableWeekends?: boolean;
+  disabledDates?: Date[];
+  minRangeDays?: number;
+  maxRangeDays?: number;
+  isDateDisabled?: (date: Date) => boolean;
+  validateRange?: (start: Date, end: Date) => boolean;
 }
 
 const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
@@ -48,7 +54,13 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   weekStart = 0,
   fiscalYearStartMonth = 0,
   fiscalYearStartDay = 1,
-  calendars = 2
+  calendars = 2,
+  disableWeekends = false,
+  disabledDates = [],
+  minRangeDays,
+  maxRangeDays,
+  isDateDisabled,
+  validateRange
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -117,15 +129,68 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     }
   };
 
+  const normalizeDateKey = (date: Date) => date.toDateString();
+  const disabledDateKeys = new Set(disabledDates.map(normalizeDateKey));
+  const isDayDisabled = (date: Date) => {
+    if (disableWeekends && isWeekend(date)) {
+      return true;
+    }
+    if (disabledDateKeys.has(normalizeDateKey(date))) {
+      return true;
+    }
+    if (isDateDisabled?.(date)) {
+      return true;
+    }
+    return false;
+  };
+
+  const rangeHasDisabledDates = (start: Date, end: Date) => {
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      if (isDayDisabled(cursor)) {
+        return true;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return false;
+  };
+
+  const isRangeValid = (start: Date, end: Date) => {
+    const diffMs = Math.abs(end.getTime() - start.getTime());
+    const rangeDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    if (minRangeDays && rangeDays < minRangeDays) {
+      return false;
+    }
+    if (maxRangeDays && rangeDays > maxRangeDays) {
+      return false;
+    }
+    if (rangeHasDisabledDates(start, end)) {
+      return false;
+    }
+    if (validateRange && !validateRange(start, end)) {
+      return false;
+    }
+    return true;
+  };
+
   const handleDateClick = (selectedDate: Date) => {
+    if (isDayDisabled(selectedDate)) {
+      return;
+    }
     if (selectionMode === 'iso-week') {
       const { start, end } = getIsoWeekRange(selectedDate);
+      if (!isRangeValid(start, end)) {
+        return;
+      }
       setStartDate(start);
       setEndDate(end);
       return;
     }
     if (selectionMode === 'week') {
       const { start, end } = getWeekRange(selectedDate, weekStart);
+      if (!isRangeValid(start, end)) {
+        return;
+      }
       setStartDate(start);
       setEndDate(end);
       return;
@@ -137,6 +202,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
         fiscalYearStartMonth,
         fiscalYearStartDay
       );
+      if (!isRangeValid(start, end)) {
+        return;
+      }
       setStartDate(start);
       setEndDate(end);
       return;
@@ -146,10 +214,14 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       setEndDate(null);
     } else {
       if (selectedDate < startDate) {
-        setEndDate(startDate);
-        setStartDate(selectedDate);
+        if (isRangeValid(selectedDate, startDate)) {
+          setEndDate(startDate);
+          setStartDate(selectedDate);
+        }
       } else {
-        setEndDate(selectedDate);
+        if (isRangeValid(startDate, selectedDate)) {
+          setEndDate(selectedDate);
+        }
       }
     }
   };
@@ -200,8 +272,14 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     const today = new Date();
 
     const updateHoveringDates = (day: Date | null) => {
+      if (day && isDayDisabled(day)) {
+        return;
+      }
       if (selectionMode === 'iso-week' && day) {
         const { start, end } = getIsoWeekRange(day);
+        if (!isRangeValid(start, end)) {
+          return;
+        }
         const cursor = new Date(start);
         const newSelectedDates: Date[] = [];
         while (cursor <= end) {
@@ -213,6 +291,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       }
       if (selectionMode === 'week' && day) {
         const { start, end } = getWeekRange(day, weekStart);
+        if (!isRangeValid(start, end)) {
+          return;
+        }
         const cursor = new Date(start);
         const newSelectedDates: Date[] = [];
         while (cursor <= end) {
@@ -229,6 +310,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
           fiscalYearStartMonth,
           fiscalYearStartDay
         );
+        if (!isRangeValid(start, end)) {
+          return;
+        }
         const cursor = new Date(start);
         const newSelectedDates: Date[] = [];
         while (cursor <= end) {
@@ -254,12 +338,16 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
 
         if (day >= startDate) {
           while (currentDate <= day) {
-            newSelectedDates.push(new Date(currentDate));
+            if (!isDayDisabled(currentDate)) {
+              newSelectedDates.push(new Date(currentDate));
+            }
             currentDate.setDate(currentDate.getDate() + 1);
           }
         } else {
           while (currentDate >= day) {
-            newSelectedDates.push(new Date(currentDate));
+            if (!isDayDisabled(currentDate)) {
+              newSelectedDates.push(new Date(currentDate));
+            }
             currentDate.setDate(currentDate.getDate() - 1);
           }
         }
@@ -291,6 +379,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       const isHoverRangeEnd = selectedHoveringMax && day.toDateString() === selectedHoveringMax.toDateString();
 
       const classes = ['day'];
+      if (isDayDisabled(day)) {
+        classes.push('disabled');
+      }
       if (isInRange || isSelected) {
         classes.push(isSelected ? 'hover-range' : 'in-range');
       }
@@ -441,7 +532,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   }, [isCalendarVisible]);
 
   return (
-    <div className="weekday-date-range-picker date-picker-container">
+    <div
+      className={`weekday-date-range-picker date-picker-container${selectedTheme.usePlaceboShadow ? ' placebo-theme' : ''}`}
+    >
       <div className="input-wrapper">
         <div className="card-info">
           Please select your date range and hit pick to make a selection.

@@ -107,6 +107,10 @@
   margin-top: 10px;
 }
 
+.weekday-date-range-picker.placebo-theme .calendar {
+  gap: 5px;
+}
+
 .weekday-date-range-picker .day {
   padding: 12px;
   text-align: center;
@@ -114,6 +118,11 @@
   color: #000;
   transition: background-color 0.3s ease;
   border-radius: 50%;
+}
+
+.weekday-date-range-picker .day.disabled {
+  color: #c0c0c0;
+  cursor: not-allowed;
 }
 
 .weekday-date-range-picker .day.in-range,
