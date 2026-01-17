@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import './styles.css';
 import {
   isWeekend,
@@ -84,6 +84,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   const [calendarYears, setCalendarYears] = useState<number[]>([]);
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const [selectedHoveringDates, setSelectedHoveringDates] = useState<Date[]>([]);
+  const [focusedDate, setFocusedDate] = useState<Date | null>(null);
+  const instructionsId = useId();
 
   const maxCalendars = Math.min(Math.max(calendars, 1), 3);
   const resolvedWeekStart = useLocaleWeekStart ? getLocaleWeekStart(locale) : weekStart;
@@ -148,6 +150,12 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   };
 
   const normalizeDateKey = (date: Date) => date.toDateString();
+  const getDateKey = (date: Date) => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
   const disabledDateKeys = new Set(disabledDates.map(normalizeDateKey));
   const isDayDisabled = (date: Date) => {
     if (disableWeekends && isWeekend(date)) {
@@ -270,6 +278,19 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     };
   }, [isCalendarVisible]);
 
+  useEffect(() => {
+    if (!isCalendarVisible) {
+      return;
+    }
+    if (!focusedDate) {
+      setFocusedDate(startDate ?? new Date());
+      return;
+    }
+    const key = getDateKey(focusedDate);
+    const element = calendarRef.current?.querySelector<HTMLElement>(`[data-date="${key}"]`);
+    element?.focus();
+  }, [isCalendarVisible, focusedDate, startDate]);
+
   const renderCalendar = () => {
     const monthConfigs = Array.from({ length: maxCalendars }, (_, index) => {
       const month = calendarMonths[index] ?? displayedDate.getMonth() + index;
@@ -376,6 +397,60 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       }
     };
 
+    const getNextFocusableDate = (base: Date, deltaDays: number) => {
+      const candidate = new Date(base);
+      candidate.setDate(candidate.getDate() + deltaDays);
+      let attempts = 0;
+      while (attempts < 370 && isDayDisabled(candidate)) {
+        candidate.setDate(candidate.getDate() + Math.sign(deltaDays || 1));
+        attempts += 1;
+      }
+      return candidate;
+    };
+
+    const handleGridKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!focusedDate) {
+        return;
+      }
+      switch (event.key) {
+        case 'ArrowLeft':
+          event.preventDefault();
+          setFocusedDate(getNextFocusableDate(focusedDate, -1));
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          setFocusedDate(getNextFocusableDate(focusedDate, 1));
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          setFocusedDate(getNextFocusableDate(focusedDate, -7));
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          setFocusedDate(getNextFocusableDate(focusedDate, 7));
+          break;
+        case 'Home':
+          event.preventDefault();
+          setFocusedDate(getNextFocusableDate(focusedDate, -((focusedDate.getDay() - resolvedWeekStart + 7) % 7)));
+          break;
+        case 'End':
+          event.preventDefault();
+          setFocusedDate(getNextFocusableDate(focusedDate, 6 - ((focusedDate.getDay() - resolvedWeekStart + 7) % 7)));
+          break;
+        case 'Enter':
+        case ' ':
+          event.preventDefault();
+          handleDateClick(focusedDate);
+          break;
+        case 'Escape':
+          event.preventDefault();
+          setIsCalendarVisible(false);
+          break;
+        default:
+          break;
+      }
+    };
+
     const selectedHoveringMin = selectedHoveringDates.length
       ? new Date(Math.min(...selectedHoveringDates.map((day) => day.getTime())))
       : null;
@@ -456,13 +531,23 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                       ))}
                     </select>
                   </div>
-                  <div className="calendar" onMouseLeave={() => setSelectedHoveringDates([])}>
+                  <div
+                    className="calendar"
+                    role="grid"
+                    aria-label={`${new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(config.year, config.month))}`}
+                    aria-describedby={instructionsId}
+                    onMouseLeave={() => setSelectedHoveringDates([])}
+                    onKeyDown={handleGridKeyDown}
+                  >
                     <div className="day-labels">
                       {dayLabels.map((label) => (
-                        <div key={label} className="day-label">{label}</div>
+                        <div key={label} className="day-label" role="columnheader">{label}</div>
                       ))}
                     </div>
                     {days.map((day, index) => {
+                      if (!day) {
+                        return <div key={index} className="day empty" aria-hidden="true" />;
+                      }
                       const isInRange = startDate && endDate && day &&
                         day >= startDate && day <= endDate;
                       const isSelected = selectedHoveringDates.some(
@@ -471,12 +556,20 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                       const isFiscalStartDate = selectionMode === 'fiscal-week' && day
                         ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
                         : false;
+                      const isFocused = focusedDate?.toDateString() === day.toDateString();
+                      const isDisabled = isDayDisabled(day);
                       return (
                         <div
                           key={index}
                           className={getRangeClassName(day, Boolean(isInRange), isSelected)}
-                          onClick={() => day && handleDateClick(day!)}
+                          role="gridcell"
+                          aria-selected={Boolean(isInRange)}
+                          aria-disabled={isDisabled}
+                          tabIndex={isFocused ? 0 : -1}
+                          data-date={getDateKey(day)}
+                          onClick={() => handleDateClick(day)}
                           onMouseEnter={() => updateHoveringDates(day)}
+                          onFocus={() => setFocusedDate(day)}
                           style={day ? getDayStyles(selectedTheme)(
                             day,
                             today,
@@ -489,7 +582,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                             isFiscalStartDate
                           ) : {}}
                         >
-                          {day ? numberFormatter.format(day.getDate()) : ''}
+                          {numberFormatter.format(day.getDate())}
                         </div>
                       );
                     })}
@@ -558,6 +651,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       dir={rtl ? 'rtl' : 'ltr'}
     >
       <div className="input-wrapper">
+        <p id={instructionsId} className="sr-only">
+          Use arrow keys to move between dates. Press Enter or Space to select. Press Escape to close.
+        </p>
         <div className="card-info">
           Please select your date range and hit pick to make a selection.
         </div>

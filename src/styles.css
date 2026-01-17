@@ -134,6 +134,22 @@
   cursor: not-allowed;
 }
 
+.weekday-date-range-picker .day.empty {
+  pointer-events: none;
+}
+
+.weekday-date-range-picker .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .weekday-date-range-picker .day.in-range,
 .weekday-date-range-picker .day.hover-range {
   border-radius: 0;
