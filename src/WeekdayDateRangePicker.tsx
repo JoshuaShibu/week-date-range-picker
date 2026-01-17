@@ -48,6 +48,9 @@ export interface WeekdayDateRangePickerProps {
   dateFormatOptions?: Intl.DateTimeFormatOptions;
   useLocaleWeekStart?: boolean;
   rtl?: boolean;
+  timeZone?: string;
+  outputTimeZone?: string;
+  showTimeZoneLabel?: boolean;
 }
 
 const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
@@ -69,7 +72,10 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   locale = 'en-GB',
   dateFormatOptions,
   useLocaleWeekStart = false,
-  rtl = false
+  rtl = false,
+  timeZone,
+  outputTimeZone,
+  showTimeZoneLabel = false
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -89,11 +95,20 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
 
   const maxCalendars = Math.min(Math.max(calendars, 1), 3);
   const resolvedWeekStart = useLocaleWeekStart ? getLocaleWeekStart(locale) : weekStart;
-  const dateFormatter = new Intl.DateTimeFormat(
+  const resolvedTimeZone = timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const outputResolvedTimeZone = outputTimeZone ?? resolvedTimeZone;
+  const displayFormatter = new Intl.DateTimeFormat(
     locale,
-    dateFormatOptions ?? { day: '2-digit', month: '2-digit', year: '2-digit' }
+    { ...(dateFormatOptions ?? { day: '2-digit', month: '2-digit', year: '2-digit' }), timeZone: resolvedTimeZone }
+  );
+  const outputFormatter = new Intl.DateTimeFormat(
+    locale,
+    { ...(dateFormatOptions ?? { day: '2-digit', month: '2-digit', year: '2-digit' }), timeZone: outputResolvedTimeZone }
   );
   const numberFormatter = new Intl.NumberFormat(locale);
+  const timeZoneOffset = new Intl.DateTimeFormat(locale, { timeZone: resolvedTimeZone, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date())
+    .find((part) => part.type === 'timeZoneName')?.value;
 
   const buildCalendarSeeds = () => {
     return Array.from({ length: maxCalendars }, (_, index) => {
@@ -132,8 +147,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     setWeekdays(weekdays);
     setWeekends(weekends);
     onChange([
-      weekdays.map(day => dateFormatter.format(day)),
-      weekends.map(day => dateFormatter.format(day))
+      weekdays.map(day => outputFormatter.format(day)),
+      weekends.map(day => outputFormatter.format(day))
     ]);
   };
 
@@ -305,8 +320,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     });
 
     const baseDayLabels = Array.from({ length: 7 }, (_, i) => {
-      const base = new Date(2021, 7, 1 + i); // Sunday start
-      return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(base);
+      const base = new Date(Date.UTC(2021, 7, 1 + i, 12)); // Sunday start, avoid TZ drift
+      return new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: resolvedTimeZone }).format(base);
     });
     const dayLabels = resolvedWeekStart === 1
       ? [...baseDayLabels.slice(1), baseDayLabels[0]]
@@ -534,7 +549,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                   <div
                     className="calendar"
                     role="grid"
-                    aria-label={`${new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(config.year, config.month))}`}
+                    aria-label={`${new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: resolvedTimeZone }).format(new Date(Date.UTC(config.year, config.month, 1, 12)))}`}
                     aria-describedby={instructionsId}
                     onMouseLeave={() => setSelectedHoveringDates([])}
                     onKeyDown={handleGridKeyDown}
@@ -618,7 +633,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
 
   const monthOptions = Array.from({ length: 12 }, (_, i) => (
     <option key={i} value={i}>
-      {new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(0, i))}
+      {new Intl.DateTimeFormat(locale, { month: 'long', timeZone: resolvedTimeZone }).format(new Date(Date.UTC(2021, i, 1, 12)))}
     </option>
   ));
 
@@ -654,6 +669,11 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
         <p id={instructionsId} className="sr-only">
           Use arrow keys to move between dates. Press Enter or Space to select. Press Escape to close.
         </p>
+        {showTimeZoneLabel && (
+          <div className="time-zone-label">
+            Time zone: {resolvedTimeZone}{timeZoneOffset ? ` (${timeZoneOffset})` : ''}
+          </div>
+        )}
         <div className="card-info">
           Please select your date range and hit pick to make a selection.
         </div>
@@ -663,7 +683,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
             <input
               type="text"
               readOnly={true}
-              value={startDate ? dateFormatter.format(startDate) : ''}
+              value={startDate ? displayFormatter.format(startDate) : ''}
               placeholder="DD/MM/YY"
               onClick={handleTextFieldClick}
               className="date-range-input"
@@ -674,7 +694,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
             <input
               type="text"
               readOnly={true}
-              value={endDate ? dateFormatter.format(endDate) : ''}
+              value={endDate ? displayFormatter.format(endDate) : ''}
               placeholder="DD/MM/YY"
               onClick={handleTextFieldClick}
               className="date-range-input"

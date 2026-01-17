@@ -25,6 +25,13 @@
   color: #737575;
 }
 
+.weekday-date-range-picker .time-zone-label {
+  font-size: 0.9em;
+  color: #7a7a7a;
+  margin-bottom: 8px;
+  text-align: start;
+}
+
 .weekday-date-range-picker .input-wrapper-main {
   display: flex;
   justify-content: space-between;
