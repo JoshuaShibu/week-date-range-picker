@@ -24,6 +24,7 @@ export default function Example() {
       title="Custom Date Range Picker"
       selectedTheme={theme}
       selectionMode="iso-week"
+      calendars={2}
       onChange={([weekdays, weekends]) => {
         console.log('Weekdays:', weekdays);
         console.log('Weekends:', weekends);

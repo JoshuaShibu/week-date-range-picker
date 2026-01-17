@@ -36,6 +36,7 @@ export interface WeekdayDateRangePickerProps {
   weekStart?: 0 | 1;
   fiscalYearStartMonth?: number;
   fiscalYearStartDay?: number;
+  calendars?: 1 | 2 | 3;
 }
 
 const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
@@ -46,7 +47,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   selectionMode = 'date-range',
   weekStart = 0,
   fiscalYearStartMonth = 0,
-  fiscalYearStartDay = 1
+  fiscalYearStartDay = 1,
+  calendars = 2
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -57,45 +59,43 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
 
   const [weekdays, setWeekdays] = useState<Date[]>([]);
   const [weekends, setWeekends] = useState<Date[]>([]);
-  const [currentMonth, setCurrentMonth] = useState(displayedDate.getMonth());
-  const [currentYear, setCurrentYear] = useState(displayedDate.getFullYear());
-  const [nextMonth, setNextMonth] = useState(displayedDate.getMonth() + 1);
-  const [nextYear, setNextYear] = useState(displayedDate.getFullYear());
+  const [calendarMonths, setCalendarMonths] = useState<number[]>([]);
+  const [calendarYears, setCalendarYears] = useState<number[]>([]);
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
   const [selectedHoveringDates, setSelectedHoveringDates] = useState<Date[]>([]);
 
-  const [startOfCurrentMonth, setStartOfCurrentMonth] = useState<Date>(
-    new Date(displayedDate.getFullYear(), displayedDate.getMonth(), 1)
-  );
-  const [endOfCurrentMonth, setEndOfCurrentMonth] = useState<Date>(
-    new Date(displayedDate.getFullYear(), displayedDate.getMonth() + 1, 0)
-  );
+  const maxCalendars = Math.min(Math.max(calendars, 1), 3);
 
-  const [startOfNextMonth, setStartOfNextMonth] = useState<Date>(
-    new Date(displayedDate.getFullYear(), displayedDate.getMonth() + 1, 1)
-  );
-  const [endOfNextMonth, setEndOfNextMonth] = useState<Date>(
-    new Date(displayedDate.getFullYear(), displayedDate.getMonth() + 2, 0)
-  );
-
-  const changeCurrentMonth = (month: React.SetStateAction<number>) => {
-    setCurrentMonth(month);
+  const buildCalendarSeeds = () => {
+    return Array.from({ length: maxCalendars }, (_, index) => {
+      const date = new Date(displayedDate.getFullYear(), displayedDate.getMonth() + index, 1);
+      return { month: date.getMonth(), year: date.getFullYear() };
+    });
   };
 
-  const tenYearsBack = currentYear - 10;
-  const currentMonthYearOptions = generateYearOptions(tenYearsBack, 11);
-  const nextMonthYearOptions = generateYearOptions(currentYear, 21);
+  useEffect(() => {
+    if (calendarMonths.length === maxCalendars && calendarYears.length === maxCalendars) {
+      return;
+    }
+    const seeds = buildCalendarSeeds();
+    setCalendarMonths(seeds.map((seed) => seed.month));
+    setCalendarYears(seeds.map((seed) => seed.year));
+  }, [maxCalendars, displayedDate]);
 
-  const changeCurrentYear = (year: React.SetStateAction<number>) => {
-    setCurrentYear(year);
+  const changeCalendarMonth = (index: number, month: number) => {
+    setCalendarMonths((prev) => {
+      const next = [...prev];
+      next[index] = month;
+      return next;
+    });
   };
 
-  const changeNextMonth = (month: React.SetStateAction<number>) => {
-    setNextMonth(month);
-  };
-
-  const changeNextYear = (year: React.SetStateAction<number>) => {
-    setNextYear(year);
+  const changeCalendarYear = (index: number, year: number) => {
+    setCalendarYears((prev) => {
+      const next = [...prev];
+      next[index] = year;
+      return next;
+    });
   };
 
   const handleDateRangeChange = (startDate: Date, endDate: Date) => {
@@ -180,20 +180,18 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     };
   }, [isCalendarVisible]);
 
-  useEffect(() => {
-    const updateMonthBoundaries = () => {
-      setStartOfCurrentMonth(new Date(currentYear, currentMonth, 1));
-      setEndOfCurrentMonth(new Date(currentYear, currentMonth + 1, 0));
-      setStartOfNextMonth(new Date(nextYear, nextMonth, 1));
-      setEndOfNextMonth(new Date(nextYear, nextMonth + 1, 0));
-    };
-
-    updateMonthBoundaries();
-  }, [currentMonth, currentYear, nextMonth, nextYear, displayedDate]);
-
   const renderCalendar = () => {
-    const currentMonthDays = generateDays(startOfCurrentMonth, endOfCurrentMonth, weekStart);
-    const nextMonthDays = generateDays(startOfNextMonth, endOfNextMonth, weekStart);
+    const monthConfigs = Array.from({ length: maxCalendars }, (_, index) => {
+      const month = calendarMonths[index] ?? displayedDate.getMonth() + index;
+      const year = calendarYears[index] ?? displayedDate.getFullYear();
+      const date = new Date(year, month, 1);
+      return {
+        month: date.getMonth(),
+        year: date.getFullYear(),
+        start: new Date(date.getFullYear(), date.getMonth(), 1),
+        end: new Date(date.getFullYear(), date.getMonth() + 1, 0)
+      };
+    });
 
     const baseDayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
     const dayLabels = weekStart === 1
@@ -322,110 +320,71 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       <div>
         <div className="calendar-header">
           <div className="calendar-grid">
-            {/* Current Month Calendar */}
-            <div className="month-main-wrapper" id="currentMonthCalendar">
-              <div className="month-label">
-                <select value={currentMonth} onChange={(e) => changeCurrentMonth(Number(e.target.value))}>
-                  {monthOptions}
-                </select>
-                <select value={currentYear} onChange={(e) => changeCurrentYear(Number(e.target.value))}>
-                  {currentMonthYearOptions.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="calendar" onMouseLeave={() => setSelectedHoveringDates([])}>
-                <div className="day-labels">
-                  {dayLabels.map((label) => (
-                    <div key={label} className="day-label">{label}</div>
-                  ))}
-                </div>
-                {currentMonthDays.map((day, index) => {
-                  const isInRange = startDate && endDate && day &&
-                    day >= startDate && day <= endDate;
-                  const isSelected = selectedHoveringDates.some(
-                    (selectedDay) => selectedDay.toDateString() === day?.toDateString()
-                  );
-                  const isFiscalStartDate = selectionMode === 'fiscal-week' && day
-                    ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
-                    : false;
-                  return (
-                    <div
-                      key={index}
-                      className={getRangeClassName(day, Boolean(isInRange), isSelected)}
-                      onClick={() => handleDateClick(day!)}
-                      onMouseEnter={() => updateHoveringDates(day)}
-                      style={day ? getDayStyles(selectedTheme)(
-                        day,
-                        today,
-                        isInRange,
-                        isSelected,
-                        startDate,
-                        endDate,
-                        isWeekend(day),
-                        true,
-                        isFiscalStartDate
-                      ) : {}}
+            {monthConfigs.map((config, calendarIndex) => {
+              const days = generateDays(config.start, config.end, weekStart);
+              return (
+                <div
+                  key={`${config.year}-${config.month}`}
+                  className="month-main-wrapper"
+                  id={`calendar-${calendarIndex}`}
+                >
+                  <div className="month-label">
+                    <select
+                      value={config.month}
+                      onChange={(e) => changeCalendarMonth(calendarIndex, Number(e.target.value))}
                     >
-                      {day ? day.getDate() : ''}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Next Month Calendar */}
-            <div className="month-main-wrapper" id="nextMonthCalendar">
-              <div className="month-label">
-                <select value={nextMonth} onChange={(e) => changeNextMonth(Number(e.target.value))}>
-                  {monthOptions}
-                </select>
-                <select value={nextYear} onChange={(e) => changeNextYear(Number(e.target.value))}>
-                  {nextMonthYearOptions.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="calendar" onMouseLeave={() => setSelectedHoveringDates([])}>
-                <div className="day-labels">
-                  {dayLabels.map((label) => (
-                    <div key={label} className="day-label">{label}</div>
-                  ))}
-                </div>
-                {nextMonthDays.map((day, index) => {
-                  const isInRange = startDate && endDate && day &&
-                    day >= startDate && day <= endDate;
-                  const isSelected = selectedHoveringDates.some(
-                    (selectedDay) => selectedDay.toDateString() === day?.toDateString()
-                  );
-                  const isFiscalStartDate = selectionMode === 'fiscal-week' && day
-                    ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
-                    : false;
-                  return (
-                    <div
-                      key={index}
-                      className={getRangeClassName(day, Boolean(isInRange), isSelected)}
-                      onClick={() => day && handleDateClick(day!)}
-                      onMouseEnter={() => updateHoveringDates(day)}
-                      onMouseLeave={() => setSelectedHoveringDates([])}
-                      style={day ? getDayStyles(selectedTheme)(
-                        day,
-                        today,
-                        isInRange,
-                        isSelected,
-                        startDate,
-                        endDate,
-                        isWeekend(day),
-                        true,
-                        isFiscalStartDate
-                      ) : {}}
+                      {monthOptions}
+                    </select>
+                    <select
+                      value={config.year}
+                      onChange={(e) => changeCalendarYear(calendarIndex, Number(e.target.value))}
                     >
-                      {day ? day.getDate() : ''}
+                      {generateYearOptions(config.year - 10, 21).map((year) => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="calendar" onMouseLeave={() => setSelectedHoveringDates([])}>
+                    <div className="day-labels">
+                      {dayLabels.map((label) => (
+                        <div key={label} className="day-label">{label}</div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    {days.map((day, index) => {
+                      const isInRange = startDate && endDate && day &&
+                        day >= startDate && day <= endDate;
+                      const isSelected = selectedHoveringDates.some(
+                        (selectedDay) => selectedDay.toDateString() === day?.toDateString()
+                      );
+                      const isFiscalStartDate = selectionMode === 'fiscal-week' && day
+                        ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
+                        : false;
+                      return (
+                        <div
+                          key={index}
+                          className={getRangeClassName(day, Boolean(isInRange), isSelected)}
+                          onClick={() => day && handleDateClick(day!)}
+                          onMouseEnter={() => updateHoveringDates(day)}
+                          style={day ? getDayStyles(selectedTheme)(
+                            day,
+                            today,
+                            isInRange,
+                            isSelected,
+                            startDate,
+                            endDate,
+                            isWeekend(day),
+                            true,
+                            isFiscalStartDate
+                          ) : {}}
+                        >
+                          {day ? day.getDate() : ''}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <div className="predefined-ranges">
             {predefinedRangesList.map(({ label, range }, index) => (
@@ -463,11 +422,10 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     setStartDate(null);
     setEndDate(null);
     setSelectedHoveringDates([]);
-    setCurrentMonth(displayedDate.getMonth());
-    setCurrentYear(displayedDate.getFullYear());
-    setNextMonth(displayedDate.getMonth() + 1);
-    setNextYear(displayedDate.getFullYear());
     setDisplayedDate(new Date());
+    const seeds = buildCalendarSeeds();
+    setCalendarMonths(seeds.map((seed) => seed.month));
+    setCalendarYears(seeds.map((seed) => seed.year));
   };
 
 
@@ -481,17 +439,6 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isCalendarVisible]);
-
-  useEffect(() => {
-    const updateMonthBoundaries = () => {
-      setStartOfCurrentMonth(new Date(currentYear, currentMonth, 1));
-      setEndOfCurrentMonth(new Date(currentYear, currentMonth + 1, 0));
-      setStartOfNextMonth(new Date(nextYear, nextMonth, 1));
-      setEndOfNextMonth(new Date(nextYear, nextMonth + 1, 0));
-    };
-
-    updateMonthBoundaries();
-  }, [currentMonth, currentYear, nextMonth, nextYear, displayedDate]);
 
   return (
     <div className="weekday-date-range-picker date-picker-container">

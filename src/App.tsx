@@ -21,6 +21,7 @@ function App() {
   const [weekStart, setWeekStart] = useState<0 | 1>(0);
   const [fiscalStartMonth, setFiscalStartMonth] = useState<number>(0);
   const [fiscalStartDay, setFiscalStartDay] = useState<number>(1);
+  const [calendars, setCalendars] = useState<1 | 2 | 3>(2);
   useEffect(() => {
     console.log(theme)
   }, [theme])
@@ -87,6 +88,18 @@ function App() {
               </select>
             </div>
             <div className="config-field">
+              <label htmlFor="calendar-count"> No of calendars</label>
+              <select
+                id="calendar-count"
+                value={calendars}
+                onChange={(event) => setCalendars(Number(event.target.value) as 1 | 2 | 3)}
+              >
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+              </select>
+            </div>
+            <div className="config-field">
               <ThemePicker onChange={setTheme} />
             </div>
           </aside>
@@ -100,6 +113,7 @@ function App() {
               weekStart={weekStart}
               fiscalYearStartMonth={fiscalStartMonth}
               fiscalYearStartDay={fiscalStartDay}
+              calendars={calendars}
             />
           </main>
         </div>
