@@ -9,7 +9,8 @@ import {
   getDayStyles,
   getIsoWeekRange,
   getWeekRange,
-  getFiscalWeekRange
+  getFiscalWeekRange,
+  getLocaleWeekStart
 } from './helpers';
 
 type DateRange = [Date, Date];
@@ -43,6 +44,10 @@ export interface WeekdayDateRangePickerProps {
   maxRangeDays?: number;
   isDateDisabled?: (date: Date) => boolean;
   validateRange?: (start: Date, end: Date) => boolean;
+  locale?: string;
+  dateFormatOptions?: Intl.DateTimeFormatOptions;
+  useLocaleWeekStart?: boolean;
+  rtl?: boolean;
 }
 
 const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
@@ -60,7 +65,11 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   minRangeDays,
   maxRangeDays,
   isDateDisabled,
-  validateRange
+  validateRange,
+  locale = 'en-GB',
+  dateFormatOptions,
+  useLocaleWeekStart = false,
+  rtl = false
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -77,6 +86,12 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   const [selectedHoveringDates, setSelectedHoveringDates] = useState<Date[]>([]);
 
   const maxCalendars = Math.min(Math.max(calendars, 1), 3);
+  const resolvedWeekStart = useLocaleWeekStart ? getLocaleWeekStart(locale) : weekStart;
+  const dateFormatter = new Intl.DateTimeFormat(
+    locale,
+    dateFormatOptions ?? { day: '2-digit', month: '2-digit', year: '2-digit' }
+  );
+  const numberFormatter = new Intl.NumberFormat(locale);
 
   const buildCalendarSeeds = () => {
     return Array.from({ length: maxCalendars }, (_, index) => {
@@ -114,7 +129,10 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     const { weekdays, weekends } = calculateWeekdaysAndWeekends(startDate, endDate);
     setWeekdays(weekdays);
     setWeekends(weekends);
-    onChange([weekdays.map(day => day.toLocaleDateString('en-GB')), weekends.map(day => day.toLocaleDateString('en-GB'))]);
+    onChange([
+      weekdays.map(day => dateFormatter.format(day)),
+      weekends.map(day => dateFormatter.format(day))
+    ]);
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -187,7 +205,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       return;
     }
     if (selectionMode === 'week') {
-      const { start, end } = getWeekRange(selectedDate, weekStart);
+      const { start, end } = getWeekRange(selectedDate, resolvedWeekStart);
       if (!isRangeValid(start, end)) {
         return;
       }
@@ -198,7 +216,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     if (selectionMode === 'fiscal-week') {
       const { start, end } = getFiscalWeekRange(
         selectedDate,
-        weekStart,
+        resolvedWeekStart,
         fiscalYearStartMonth,
         fiscalYearStartDay
       );
@@ -265,8 +283,11 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       };
     });
 
-    const baseDayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-    const dayLabels = weekStart === 1
+    const baseDayLabels = Array.from({ length: 7 }, (_, i) => {
+      const base = new Date(2021, 7, 1 + i); // Sunday start
+      return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(base);
+    });
+    const dayLabels = resolvedWeekStart === 1
       ? [...baseDayLabels.slice(1), baseDayLabels[0]]
       : baseDayLabels;
     const today = new Date();
@@ -290,7 +311,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
         return;
       }
       if (selectionMode === 'week' && day) {
-        const { start, end } = getWeekRange(day, weekStart);
+        const { start, end } = getWeekRange(day, resolvedWeekStart);
         if (!isRangeValid(start, end)) {
           return;
         }
@@ -306,7 +327,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       if (selectionMode === 'fiscal-week' && day) {
         const { start, end } = getFiscalWeekRange(
           day,
-          weekStart,
+          resolvedWeekStart,
           fiscalYearStartMonth,
           fiscalYearStartDay
         );
@@ -389,17 +410,17 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
         classes.push('range-single');
       } else {
         if (isRangeStart) {
-          classes.push('range-start');
+          classes.push(rtl ? 'range-end' : 'range-start');
         }
         if (isRangeEnd) {
-          classes.push('range-end');
+          classes.push(rtl ? 'range-start' : 'range-end');
         }
       }
       if (isSelected && isHoverRangeStart) {
-        classes.push('hover-range-start');
+        classes.push(rtl ? 'hover-range-end' : 'hover-range-start');
       }
       if (isSelected && isHoverRangeEnd) {
-        classes.push('hover-range-end');
+        classes.push(rtl ? 'hover-range-start' : 'hover-range-end');
       }
       if (isSelected && isHoverRangeStart && isHoverRangeEnd) {
         classes.push('hover-range-single');
@@ -412,7 +433,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
         <div className="calendar-header">
           <div className="calendar-grid">
             {monthConfigs.map((config, calendarIndex) => {
-              const days = generateDays(config.start, config.end, weekStart);
+              const days = generateDays(config.start, config.end, resolvedWeekStart);
               return (
                 <div
                   key={`${config.year}-${config.month}`}
@@ -431,7 +452,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                       onChange={(e) => changeCalendarYear(calendarIndex, Number(e.target.value))}
                     >
                       {generateYearOptions(config.year - 10, 21).map((year) => (
-                        <option key={year} value={year}>{year}</option>
+                        <option key={year} value={year}>{numberFormatter.format(year)}</option>
                       ))}
                     </select>
                   </div>
@@ -468,7 +489,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                             isFiscalStartDate
                           ) : {}}
                         >
-                          {day ? day.getDate() : ''}
+                          {day ? numberFormatter.format(day.getDate()) : ''}
                         </div>
                       );
                     })}
@@ -504,7 +525,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
 
   const monthOptions = Array.from({ length: 12 }, (_, i) => (
     <option key={i} value={i}>
-      {new Date(0, i).toLocaleString('default', { month: 'long' })}
+      {new Intl.DateTimeFormat(locale, { month: 'long' }).format(new Date(0, i))}
     </option>
   ));
 
@@ -533,7 +554,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
 
   return (
     <div
-      className={`weekday-date-range-picker date-picker-container${selectedTheme.usePlaceboShadow ? ' placebo-theme' : ''}`}
+      className={`weekday-date-range-picker date-picker-container${selectedTheme.usePlaceboShadow ? ' placebo-theme' : ''}${rtl ? ' rtl' : ''}`}
+      dir={rtl ? 'rtl' : 'ltr'}
     >
       <div className="input-wrapper">
         <div className="card-info">
@@ -545,7 +567,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
             <input
               type="text"
               readOnly={true}
-              value={startDate ? startDate.toLocaleDateString('en-GB') : ''}
+              value={startDate ? dateFormatter.format(startDate) : ''}
               placeholder="DD/MM/YY"
               onClick={handleTextFieldClick}
               className="date-range-input"
@@ -556,7 +578,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
             <input
               type="text"
               readOnly={true}
-              value={endDate ? endDate.toLocaleDateString('en-GB') : ''}
+              value={endDate ? dateFormatter.format(endDate) : ''}
               placeholder="DD/MM/YY"
               onClick={handleTextFieldClick}
               className="date-range-input"

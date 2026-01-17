@@ -81,6 +81,25 @@ export const getWeekRange = (date: Date, weekStart: 0 | 1) => {
   return { start, end };
 };
 
+export const getLocaleWeekStart = (locale: string | undefined): 0 | 1 => {
+  if (!locale || typeof Intl === 'undefined') {
+    return 0;
+  }
+  try {
+    const localeObj = new (Intl as any).Locale(locale);
+    const firstDay = localeObj?.weekInfo?.firstDay;
+    if (firstDay === 1) {
+      return 1; // Monday
+    }
+    if (firstDay === 7) {
+      return 0; // Sunday
+    }
+  } catch {
+    return 0;
+  }
+  return 0;
+};
+
 export const getFiscalWeekRange = (
   date: Date,
   weekStart: 0 | 1,

@@ -22,6 +22,8 @@ function App() {
   const [fiscalStartMonth, setFiscalStartMonth] = useState<number>(0);
   const [fiscalStartDay, setFiscalStartDay] = useState<number>(1);
   const [calendars, setCalendars] = useState<1 | 2 | 3>(2);
+  const [locale, setLocale] = useState<string>('en-GB');
+  const [useLocaleWeekStart, setUseLocaleWeekStart] = useState<boolean>(true);
   useEffect(() => {
     console.log(theme)
   }, [theme])
@@ -100,6 +102,38 @@ function App() {
               </select>
             </div>
             <div className="config-field">
+              <label htmlFor="locale-select">Locale</label>
+              <select
+                id="locale-select"
+                value={locale}
+                onChange={(event) => {
+                  const nextLocale = event.target.value;
+                  setLocale(nextLocale);
+                }}
+              >
+                <option value="en-GB">English (UK)</option>
+                <option value="en-US">English (US)</option>
+                <option value="fr-FR">Français</option>
+                <option value="de-DE">Deutsch</option>
+                <option value="es-ES">Español</option>
+                <option value="ar-SA">العربية</option>
+                <option value="he-IL">עברית</option>
+                <option value="fa-IR">فارسی</option>
+                <option value="ur-PK">اردو</option>
+              </select>
+            </div>
+            <div className="config-field">
+              <label htmlFor="locale-week-start">Locale Week Start</label>
+              <select
+                id="locale-week-start"
+                value={useLocaleWeekStart ? 'true' : 'false'}
+                onChange={(event) => setUseLocaleWeekStart(event.target.value === 'true')}
+              >
+                <option value="true">Use Locale</option>
+                <option value="false">Use Week Start</option>
+              </select>
+            </div>
+            <div className="config-field">
               <ThemePicker onChange={setTheme} />
             </div>
           </aside>
@@ -114,6 +148,8 @@ function App() {
               fiscalYearStartMonth={fiscalStartMonth}
               fiscalYearStartDay={fiscalStartDay}
               calendars={calendars}
+              locale={locale}
+              useLocaleWeekStart={useLocaleWeekStart}
             />
           </main>
         </div>
