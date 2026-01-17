@@ -103,7 +103,7 @@
 .weekday-date-range-picker .calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
+  gap: 1px;
   margin-top: 10px;
 }
 
@@ -113,6 +113,40 @@
   cursor: pointer;
   color: #000;
   transition: background-color 0.3s ease;
+  border-radius: 50%;
+}
+
+.weekday-date-range-picker .day.in-range,
+.weekday-date-range-picker .day.hover-range {
+  border-radius: 0;
+}
+
+
+.weekday-date-range-picker .day.range-start {
+  border-top-left-radius: 50%;
+  border-bottom-left-radius: 50%;
+}
+
+.weekday-date-range-picker .day.range-end {
+  border-top-right-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+.weekday-date-range-picker .day.hover-range-start {
+  border-top-left-radius: 50%;
+  border-bottom-left-radius: 50%;
+}
+
+.weekday-date-range-picker .day.hover-range-end {
+  border-top-right-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+.weekday-date-range-picker .day.hover-range-single {
+  border-radius: 50%;
+}
+
+.weekday-date-range-picker .day.range-single {
   border-radius: 50%;
 }
 

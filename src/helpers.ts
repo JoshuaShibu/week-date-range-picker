@@ -37,12 +37,13 @@ export const generateYearOptions = (startYear: number, length: number) => {
 };
 
 // Function to generate days for a given month
-export const generateDays = (startOfMonth: Date, endOfMonth: Date) => {
+export const generateDays = (startOfMonth: Date, endOfMonth: Date, weekStart: 0 | 1 = 0) => {
   const days = [];
   const firstDay = startOfMonth.getDay();
+  const offset = (firstDay - weekStart + 7) % 7;
   const totalDays = endOfMonth.getDate();
 
-  for (let i = 0; i < firstDay; i++) {
+  for (let i = 0; i < offset; i++) {
     days.push(null); // Fill empty slots at the beginning of the month
   }
 
@@ -59,6 +60,49 @@ export const getIsoWeekRange = (date: Date) => {
   const isoDay = (current.getDay() + 6) % 7; // Monday = 0, Sunday = 6
   const start = new Date(current);
   start.setDate(current.getDate() - isoDay);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end };
+};
+
+export const getWeekRange = (date: Date, weekStart: 0 | 1) => {
+  const current = new Date(date);
+  current.setHours(0, 0, 0, 0);
+  const dayIndex = current.getDay();
+  const offset =
+    weekStart === 1
+      ? (dayIndex + 6) % 7
+      : dayIndex;
+  const start = new Date(current);
+  start.setDate(current.getDate() - offset);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end };
+};
+
+export const getFiscalWeekRange = (
+  date: Date,
+  weekStart: 0 | 1,
+  fiscalYearStartMonth: number,
+  fiscalYearStartDay: number
+) => {
+  const current = new Date(date);
+  current.setHours(0, 0, 0, 0);
+  const currentYear = current.getFullYear();
+
+  const fiscalStartThisYear = new Date(currentYear, fiscalYearStartMonth, fiscalYearStartDay);
+  const fiscalYearStart =
+    current >= fiscalStartThisYear
+      ? fiscalStartThisYear
+      : new Date(currentYear - 1, fiscalYearStartMonth, fiscalYearStartDay);
+
+  const fiscalStartWeek = getWeekRange(fiscalYearStart, weekStart).start;
+  const diffMs = current.getTime() - fiscalStartWeek.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const weekIndex = Math.floor(diffDays / 7);
+
+  const start = new Date(fiscalStartWeek);
+  start.setDate(fiscalStartWeek.getDate() + weekIndex * 7);
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
   return { start, end };
@@ -128,9 +172,14 @@ export const getDayStyles = (colorSchema: colorSchemaTypes) => {
     isSelected: boolean,
     startDate: Date | null,
     endDate: Date | null,
-    isWeekend: boolean
+    isWeekend: boolean,
+    allowWeekendSelection: boolean = false,
+    isFiscalStartDate: boolean = false
   ) => {
     const styles: React.CSSProperties = {};
+    const boxShadows: string[] = [];
+    const isStart = Boolean(startDate && day.getTime() === startDate.getTime());
+    const isEnd = Boolean(endDate && day.getTime() === endDate.getTime());
 
     // Weekend styling
     if (isWeekend) {
@@ -147,28 +196,49 @@ export const getDayStyles = (colorSchema: colorSchemaTypes) => {
     // Range highlight
     if (isInRange) {
       styles.backgroundColor = colorSchema.highlight;
+      boxShadows.push(`1px 0 0 0 ${colorSchema.highlight}`);
     }
 
     // Start date styling
-    if (startDate && day.getTime() === startDate.getTime()) {
+    if (isStart) {
       styles.backgroundColor = colorSchema.primary; // Primary color for start date
       styles.color = '#fff'; // Assuming white text for the start date
     }
 
     // End date styling
-    if (endDate && day.getTime() === endDate.getTime()) {
+    if (isEnd) {
       styles.backgroundColor = colorSchema.secondary; // Secondary color for end date
       styles.color = '#fff'; // Assuming white text for the end date
+      // End date should override any range/hover shadows
+      boxShadows.length = 0;
+      boxShadows.push(`0 0 0 0 ${colorSchema.highlight}`);
     }
 
     // Selected day styling for other selected days
     if (
       isSelected &&
-      !isWeekend && // Prevent selected styling on weekend days
+      (allowWeekendSelection || !isWeekend) &&
       !(startDate && day.getTime() === startDate.getTime()) &&
       !(endDate && day.getTime() === endDate.getTime())
     ) {
-      styles.backgroundColor = colorSchema.highlight; // Highlight color for selected days that are not start/end
+      const dashColor = 'lightgray';
+      // Use a repeating gradient to get dashed top/bottom lines.
+      styles.backgroundImage = [
+        `repeating-linear-gradient(90deg, ${dashColor} 0 6px, transparent 6px 10px)`,
+        `repeating-linear-gradient(90deg, ${dashColor} 0 6px, transparent 6px 10px)`
+      ].join(', ');
+      styles.backgroundSize = '100% 2px, 100% 2px';
+      styles.backgroundPosition = '0 0, 0 100%';
+      styles.backgroundRepeat = 'repeat-x';
+    }
+
+    if (isFiscalStartDate) {
+      // Use theme palette to outline fiscal year start date
+      boxShadows.push(`inset 0 0 0 2px ${colorSchema.hoverHighlight}`);
+    }
+
+    if (boxShadows.length) {
+      styles.boxShadow = boxShadows.join(', ');
     }
 
     return styles;

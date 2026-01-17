@@ -110,5 +110,17 @@ export const colorSchemas = {
     },
     todayColor: '#f1e6b9',
   },
+  Placebo: {
+    primary: '#6c5ce7',
+    secondary: '#6c5ce7', // Same as primary
+    highlight: 'rgba(108, 92, 231, 0.25)', // 25% opacity of primary
+    hoverHighlight: '#a29bfe',
+    weekend: {
+      color: '#999',
+      backgroundColor: '#f7f7f7',
+    },
+    todayColor: '#00b894',
+    usePlaceboShadow: true,
+  },
 };
 

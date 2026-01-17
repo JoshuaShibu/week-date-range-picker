@@ -17,7 +17,10 @@ function App() {
     [new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), new Date()],
   ];
   const [theme, setTheme] = useState<any>(colorSchemas.Material);
-  const [selectionMode, setSelectionMode] = useState<'date-range' | 'iso-week'>('date-range');
+  const [selectionMode, setSelectionMode] = useState<'date-range' | 'iso-week' | 'week' | 'fiscal-week'>('date-range');
+  const [weekStart, setWeekStart] = useState<0 | 1>(0);
+  const [fiscalStartMonth, setFiscalStartMonth] = useState<number>(0);
+  const [fiscalStartDay, setFiscalStartDay] = useState<number>(1);
   useEffect(() => {
     console.log(theme)
   }, [theme])
@@ -33,10 +36,54 @@ function App() {
               <select
                 id="selection-mode"
                 value={selectionMode}
-                onChange={(event) => setSelectionMode(event.target.value as 'date-range' | 'iso-week')}
+                onChange={(event) => setSelectionMode(event.target.value as 'date-range' | 'iso-week' | 'week' | 'fiscal-week')}
               >
                 <option value="date-range">Date Range</option>
                 <option value="iso-week">ISO Week</option>
+                <option value="week">Week (Custom Start)</option>
+                <option value="fiscal-week">Fiscal Week</option>
+              </select>
+            </div>
+            <div className="config-field">
+              <label htmlFor="week-start">Week Start</label>
+              <select
+                id="week-start"
+                value={weekStart}
+                onChange={(event) => setWeekStart(event.target.value === '1' ? 1 : 0)}
+                disabled={selectionMode !== 'week' && selectionMode !== 'fiscal-week'}
+              >
+                <option value={0}>Sunday</option>
+                <option value={1}>Monday</option>
+              </select>
+            </div>
+            <div className="config-field">
+              <label htmlFor="fiscal-start-month">Fiscal Start Month</label>
+              <select
+                id="fiscal-start-month"
+                value={fiscalStartMonth}
+                onChange={(event) => setFiscalStartMonth(Number(event.target.value))}
+                disabled={selectionMode !== 'fiscal-week'}
+              >
+                {Array.from({ length: 12 }, (_, index) => (
+                  <option key={index} value={index}>
+                    {new Date(0, index).toLocaleString('default', { month: 'long' })}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="config-field">
+              <label htmlFor="fiscal-start-day">Fiscal Start Day</label>
+              <select
+                id="fiscal-start-day"
+                value={fiscalStartDay}
+                onChange={(event) => setFiscalStartDay(Number(event.target.value))}
+                disabled={selectionMode !== 'fiscal-week'}
+              >
+                {Array.from({ length: 31 }, (_, index) => (
+                  <option key={index} value={index + 1}>
+                    {index + 1}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="config-field">
@@ -50,8 +97,9 @@ function App() {
               selectedTheme={theme}
               predefinedRanges={predefinedRanges}
               selectionMode={selectionMode}
-              onSelectionModeChange={setSelectionMode}
-              showSelectionModeSelect={true}
+              weekStart={weekStart}
+              fiscalYearStartMonth={fiscalStartMonth}
+              fiscalYearStartDay={fiscalStartDay}
             />
           </main>
         </div>

@@ -12,6 +12,7 @@ type colorSchemaTypes = {
     backgroundColor: string;          
   };
   todayColor: string;
+  usePlaceboShadow?: boolean;
 };
 // Create a context type
 interface ThemeContextType {

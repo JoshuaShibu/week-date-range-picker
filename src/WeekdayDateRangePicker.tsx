@@ -7,7 +7,9 @@ import {
   generateDays,
   predefinedRangesList,
   getDayStyles,
-  getIsoWeekRange
+  getIsoWeekRange,
+  getWeekRange,
+  getFiscalWeekRange
 } from './helpers';
 
 type DateRange = [Date, Date];
@@ -22,6 +24,7 @@ type colorSchemaTypes = {
     backgroundColor: string;
   };
   todayColor: string;
+  usePlaceboShadow?: boolean;
 };
 
 export interface WeekdayDateRangePickerProps {
@@ -29,9 +32,10 @@ export interface WeekdayDateRangePickerProps {
   onChange: (range: [string[], string[]]) => void;
   title?: string;
   selectedTheme: colorSchemaTypes;
-  selectionMode?: 'date-range' | 'iso-week';
-  onSelectionModeChange?: (mode: 'date-range' | 'iso-week') => void;
-  showSelectionModeSelect?: boolean;
+  selectionMode?: 'date-range' | 'iso-week' | 'week' | 'fiscal-week';
+  weekStart?: 0 | 1;
+  fiscalYearStartMonth?: number;
+  fiscalYearStartDay?: number;
 }
 
 const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
@@ -40,8 +44,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   title,
   selectedTheme,
   selectionMode = 'date-range',
-  onSelectionModeChange,
-  showSelectionModeSelect = false
+  weekStart = 0,
+  fiscalYearStartMonth = 0,
+  fiscalYearStartDay = 1
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -119,6 +124,23 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       setEndDate(end);
       return;
     }
+    if (selectionMode === 'week') {
+      const { start, end } = getWeekRange(selectedDate, weekStart);
+      setStartDate(start);
+      setEndDate(end);
+      return;
+    }
+    if (selectionMode === 'fiscal-week') {
+      const { start, end } = getFiscalWeekRange(
+        selectedDate,
+        weekStart,
+        fiscalYearStartMonth,
+        fiscalYearStartDay
+      );
+      setStartDate(start);
+      setEndDate(end);
+      return;
+    }
     if (!startDate || endDate) {
       setStartDate(selectedDate);
       setEndDate(null);
@@ -144,46 +166,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     }
     setIsCalendarVisible(false);
   };
-  //   return (
-  //     day: Date,
-  //     today: Date,
-  //     isInRange: boolean | null,
-  //     isSelected: boolean,
-  //     startDate: Date | null,
-  //     endDate: Date | null,
-  //     isWeekend: boolean
-  //   ) => {
-  //     const styles: React.CSSProperties = {};
-
-  //     // Weekend styling
-  //     if (isWeekend) {
-  //       styles.color = colorSchema.weekend.color;
-  //       styles.backgroundColor = colorSchema.weekend.backgroundColor;
-  //     }
-
-  //     // Today styling
-  //     if (day && today.toDateString() === day.toDateString()) {
-  //       styles.backgroundColor = colorSchema.todayColor;
-  //       styles.color = '#fff'; // Assuming white text for today
-  //     }
-
-  //     // Range highlight
-  //     if (isInRange) {
-  //       styles.backgroundColor = colorSchema.highlight;
-  //     }
-
-  //     // Selected day styling
-  //     if (
-  //       (startDate && day.getTime() === startDate.getTime()) || 
-  //       (endDate && day.getTime() === endDate.getTime())
-  //     ) {
-  //       styles.backgroundColor = colorSchema.primary;
-  //       styles.color = '#fff'; // Assuming white text for selected days
-  //     }
-
-  //     return styles;
-  //   };
-  // };
+ 
 
   useEffect(() => {
     console.log('selected theme is .', selectedTheme)
@@ -209,15 +192,45 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   }, [currentMonth, currentYear, nextMonth, nextYear, displayedDate]);
 
   const renderCalendar = () => {
-    const currentMonthDays = generateDays(startOfCurrentMonth, endOfCurrentMonth);
-    const nextMonthDays = generateDays(startOfNextMonth, endOfNextMonth);
+    const currentMonthDays = generateDays(startOfCurrentMonth, endOfCurrentMonth, weekStart);
+    const nextMonthDays = generateDays(startOfNextMonth, endOfNextMonth, weekStart);
 
-    const dayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const baseDayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+    const dayLabels = weekStart === 1
+      ? [...baseDayLabels.slice(1), baseDayLabels[0]]
+      : baseDayLabels;
     const today = new Date();
 
     const updateHoveringDates = (day: Date | null) => {
       if (selectionMode === 'iso-week' && day) {
         const { start, end } = getIsoWeekRange(day);
+        const cursor = new Date(start);
+        const newSelectedDates: Date[] = [];
+        while (cursor <= end) {
+          newSelectedDates.push(new Date(cursor));
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        setSelectedHoveringDates(newSelectedDates);
+        return;
+      }
+      if (selectionMode === 'week' && day) {
+        const { start, end } = getWeekRange(day, weekStart);
+        const cursor = new Date(start);
+        const newSelectedDates: Date[] = [];
+        while (cursor <= end) {
+          newSelectedDates.push(new Date(cursor));
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        setSelectedHoveringDates(newSelectedDates);
+        return;
+      }
+      if (selectionMode === 'fiscal-week' && day) {
+        const { start, end } = getFiscalWeekRange(
+          day,
+          weekStart,
+          fiscalYearStartMonth,
+          fiscalYearStartDay
+        );
         const cursor = new Date(start);
         const newSelectedDates: Date[] = [];
         while (cursor <= end) {
@@ -256,6 +269,55 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       }
     };
 
+    const selectedHoveringMin = selectedHoveringDates.length
+      ? new Date(Math.min(...selectedHoveringDates.map((day) => day.getTime())))
+      : null;
+    const selectedHoveringMax = selectedHoveringDates.length
+      ? new Date(Math.max(...selectedHoveringDates.map((day) => day.getTime())))
+      : null;
+
+    const getRangeClassName = (day: Date | null, isInRange: boolean, isSelected: boolean) => {
+      if (!day) {
+        return 'day';
+      }
+      const hasStart = Boolean(startDate);
+      const hasConfirmedRange = Boolean(startDate && endDate);
+      const isRangeStart = hasConfirmedRange
+        ? startDate && day.toDateString() === startDate.toDateString()
+        : hasStart && startDate && day.toDateString() === startDate.toDateString();
+      const isRangeEnd = hasConfirmedRange
+        ? endDate && day.toDateString() === endDate.toDateString()
+        : false;
+      const isSingleRange = isRangeStart && isRangeEnd;
+      const isHoverRangeStart = selectedHoveringMin && day.toDateString() === selectedHoveringMin.toDateString();
+      const isHoverRangeEnd = selectedHoveringMax && day.toDateString() === selectedHoveringMax.toDateString();
+
+      const classes = ['day'];
+      if (isInRange || isSelected) {
+        classes.push(isSelected ? 'hover-range' : 'in-range');
+      }
+      if (isSingleRange) {
+        classes.push('range-single');
+      } else {
+        if (isRangeStart) {
+          classes.push('range-start');
+        }
+        if (isRangeEnd) {
+          classes.push('range-end');
+        }
+      }
+      if (isSelected && isHoverRangeStart) {
+        classes.push('hover-range-start');
+      }
+      if (isSelected && isHoverRangeEnd) {
+        classes.push('hover-range-end');
+      }
+      if (isSelected && isHoverRangeStart && isHoverRangeEnd) {
+        classes.push('hover-range-single');
+      }
+      return classes.join(' ');
+    };
+
     return (
       <div>
         <div className="calendar-header">
@@ -272,7 +334,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                   ))}
                 </select>
               </div>
-              <div className="calendar">
+              <div className="calendar" onMouseLeave={() => setSelectedHoveringDates([])}>
                 <div className="day-labels">
                   {dayLabels.map((label) => (
                     <div key={label} className="day-label">{label}</div>
@@ -280,18 +342,30 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                 </div>
                 {currentMonthDays.map((day, index) => {
                   const isInRange = startDate && endDate && day &&
-                    day >= startDate && day <= endDate && !isWeekend(day);
+                    day >= startDate && day <= endDate;
                   const isSelected = selectedHoveringDates.some(
                     (selectedDay) => selectedDay.toDateString() === day?.toDateString()
                   );
+                  const isFiscalStartDate = selectionMode === 'fiscal-week' && day
+                    ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
+                    : false;
                   return (
                     <div
                       key={index}
-                      className='day'
+                      className={getRangeClassName(day, Boolean(isInRange), isSelected)}
                       onClick={() => handleDateClick(day!)}
                       onMouseEnter={() => updateHoveringDates(day)}
-                      onMouseLeave={() => setSelectedHoveringDates([])}
-                      style={day ? getDayStyles(selectedTheme)(day, today, isInRange, isSelected, startDate, endDate, isWeekend(day)) : {}}
+                      style={day ? getDayStyles(selectedTheme)(
+                        day,
+                        today,
+                        isInRange,
+                        isSelected,
+                        startDate,
+                        endDate,
+                        isWeekend(day),
+                        true,
+                        isFiscalStartDate
+                      ) : {}}
                     >
                       {day ? day.getDate() : ''}
                     </div>
@@ -312,7 +386,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                   ))}
                 </select>
               </div>
-              <div className="calendar">
+              <div className="calendar" onMouseLeave={() => setSelectedHoveringDates([])}>
                 <div className="day-labels">
                   {dayLabels.map((label) => (
                     <div key={label} className="day-label">{label}</div>
@@ -320,18 +394,31 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                 </div>
                 {nextMonthDays.map((day, index) => {
                   const isInRange = startDate && endDate && day &&
-                    day >= startDate && day <= endDate && !isWeekend(day);
+                    day >= startDate && day <= endDate;
                   const isSelected = selectedHoveringDates.some(
                     (selectedDay) => selectedDay.toDateString() === day?.toDateString()
                   );
+                  const isFiscalStartDate = selectionMode === 'fiscal-week' && day
+                    ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
+                    : false;
                   return (
                     <div
                       key={index}
-                      className='day'
+                      className={getRangeClassName(day, Boolean(isInRange), isSelected)}
                       onClick={() => day && handleDateClick(day!)}
                       onMouseEnter={() => updateHoveringDates(day)}
                       onMouseLeave={() => setSelectedHoveringDates([])}
-                      style={day ? getDayStyles(selectedTheme)(day, today, isInRange, isSelected, startDate, endDate, isWeekend(day)) : {}}
+                      style={day ? getDayStyles(selectedTheme)(
+                        day,
+                        today,
+                        isInRange,
+                        isSelected,
+                        startDate,
+                        endDate,
+                        isWeekend(day),
+                        true,
+                        isFiscalStartDate
+                      ) : {}}
                     >
                       {day ? day.getDate() : ''}
                     </div>
