@@ -1,3 +1,5 @@
+import './styles.css';
+
 export { default as WeekdayDateRangePicker } from './WeekdayDateRangePicker';
 export type { WeekdayDateRangePickerProps } from './WeekdayDateRangePicker';
 export { default as ThemePicker } from './themePicker';

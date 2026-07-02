@@ -11,12 +11,31 @@ type colorSchemaTypes$1 = {
         backgroundColor: string;
     };
     todayColor: string;
+    usePlaceboShadow?: boolean;
 };
 interface WeekdayDateRangePickerProps {
     predefinedRanges?: DateRange[];
     onChange: (range: [string[], string[]]) => void;
     title?: string;
     selectedTheme: colorSchemaTypes$1;
+    selectionMode?: 'date-range' | 'iso-week' | 'week' | 'fiscal-week';
+    weekStart?: 0 | 1;
+    fiscalYearStartMonth?: number;
+    fiscalYearStartDay?: number;
+    calendars?: 1 | 2 | 3;
+    disableWeekends?: boolean;
+    disabledDates?: Date[];
+    minRangeDays?: number;
+    maxRangeDays?: number;
+    isDateDisabled?: (date: Date) => boolean;
+    validateRange?: (start: Date, end: Date) => boolean;
+    locale?: string;
+    dateFormatOptions?: Intl.DateTimeFormatOptions;
+    useLocaleWeekStart?: boolean;
+    rtl?: boolean;
+    timeZone?: string;
+    outputTimeZone?: string;
+    showTimeZoneLabel?: boolean;
 }
 declare const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps>;
 
@@ -136,6 +155,18 @@ declare const colorSchemas: {
         };
         todayColor: string;
     };
+    Placebo: {
+        primary: string;
+        secondary: string;
+        highlight: string;
+        hoverHighlight: string;
+        weekend: {
+            color: string;
+            backgroundColor: string;
+        };
+        todayColor: string;
+        usePlaceboShadow: boolean;
+    };
 };
 
 type colorSchemaTypes = {
@@ -148,6 +179,7 @@ type colorSchemaTypes = {
         backgroundColor: string;
     };
     todayColor: string;
+    usePlaceboShadow?: boolean;
 };
 interface ThemeContextType {
     theme: colorSchemaTypes;

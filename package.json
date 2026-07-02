@@ -2,16 +2,20 @@
   "name": "weekday-date-range-picker",
   "version": "0.1.0",
   "private": false,
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/lib.js",
+  "proxy": "http://localhost:3000",
+  "module": "./dist/lib.mjs",
+  "types": "./dist/lib.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.mjs",
+      "require": "./dist/lib.js"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": {
+      "import": "./dist/styles.css",
+      "default": "./dist/styles.css"
+    }
   },
   "files": [
     "dist",
@@ -48,7 +52,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "build:lib": "tsup src/index.ts --format esm,cjs --dts --sourcemap --clean && cpy src/styles.css dist",
+    "build:lib": "tsup src/lib.ts --format esm,cjs --dts --sourcemap --clean && cpy src/styles.css dist --flat",
     "prepublishOnly": "npm run build:lib"
   },
   "eslintConfig": {
