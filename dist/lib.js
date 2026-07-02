@@ -208,6 +208,58 @@ var generateYearOptions = function(startYear, length) {
         return startYear + index;
     });
 };
+var defaultDateFormatOptions = {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+};
+var defaultYearFormatOptions = {
+    year: "numeric"
+};
+var formatYear = function(year, locale) {
+    var options = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : defaultYearFormatOptions, timeZone = arguments.length > 3 ? arguments[3] : void 0;
+    return new Intl.DateTimeFormat(locale, _object_spread({}, options, timeZone ? {
+        timeZone: timeZone
+    } : {})).format(new Date(year, 6, 1));
+};
+var getDatePlaceholder = function(locale) {
+    var options = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : defaultDateFormatOptions, timeZone = arguments.length > 2 ? arguments[2] : void 0;
+    var formatter = new Intl.DateTimeFormat(locale, _object_spread({}, options, timeZone ? {
+        timeZone: timeZone
+    } : {}));
+    return formatter.formatToParts(new Date(2026, 11, 31)).map(function(part) {
+        switch(part.type){
+            case "day":
+                return "DD";
+            case "month":
+                return "MM";
+            case "year":
+                return options.year === "2-digit" ? "YY" : "YYYY";
+            case "literal":
+                return part.value;
+            default:
+                return "";
+        }
+    }).join("").trim();
+};
+var normalizeDateRange = function(first, second) {
+    return first.getTime() <= second.getTime() ? [
+        first,
+        second
+    ] : [
+        second,
+        first
+    ];
+};
+var isSameCalendarDay = function(left, right) {
+    return left.toDateString() === right.toDateString();
+};
+var isWeekRowStart = function(day, weekStart) {
+    return day.getDay() === weekStart;
+};
+var isWeekRowEnd = function(day, weekStart) {
+    return day.getDay() === (weekStart + 6) % 7;
+};
 var generateDays = function(startOfMonth, endOfMonth) {
     var weekStart = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : 0;
     var days = [];
@@ -419,7 +471,7 @@ var getDayStyles = function(colorSchema) {
 // src/WeekdayDateRangePicker.tsx
 var import_jsx_runtime = require("react/jsx-runtime");
 var WeekdayDateRangePicker = function(param) {
-    var _param_predefinedRanges = param.predefinedRanges, predefinedRanges = _param_predefinedRanges === void 0 ? [] : _param_predefinedRanges, onChange = param.onChange, title = param.title, selectedTheme = param.selectedTheme, _param_selectionMode = param.selectionMode, selectionMode = _param_selectionMode === void 0 ? "date-range" : _param_selectionMode, _param_weekStart = param.weekStart, weekStart = _param_weekStart === void 0 ? 0 : _param_weekStart, _param_fiscalYearStartMonth = param.fiscalYearStartMonth, fiscalYearStartMonth = _param_fiscalYearStartMonth === void 0 ? 0 : _param_fiscalYearStartMonth, _param_fiscalYearStartDay = param.fiscalYearStartDay, fiscalYearStartDay = _param_fiscalYearStartDay === void 0 ? 1 : _param_fiscalYearStartDay, _param_calendars = param.calendars, calendars = _param_calendars === void 0 ? 2 : _param_calendars, _param_disableWeekends = param.disableWeekends, disableWeekends = _param_disableWeekends === void 0 ? false : _param_disableWeekends, _param_disabledDates = param.disabledDates, disabledDates = _param_disabledDates === void 0 ? [] : _param_disabledDates, minRangeDays = param.minRangeDays, maxRangeDays = param.maxRangeDays, isDateDisabled = param.isDateDisabled, validateRange = param.validateRange, _param_locale = param.locale, locale = _param_locale === void 0 ? "en-GB" : _param_locale, dateFormatOptions = param.dateFormatOptions, _param_useLocaleWeekStart = param.useLocaleWeekStart, useLocaleWeekStart = _param_useLocaleWeekStart === void 0 ? false : _param_useLocaleWeekStart, _param_rtl = param.rtl, rtl = _param_rtl === void 0 ? false : _param_rtl, timeZone = param.timeZone, outputTimeZone = param.outputTimeZone, _param_showTimeZoneLabel = param.showTimeZoneLabel, showTimeZoneLabel = _param_showTimeZoneLabel === void 0 ? false : _param_showTimeZoneLabel;
+    var _param_predefinedRanges = param.predefinedRanges, predefinedRanges = _param_predefinedRanges === void 0 ? [] : _param_predefinedRanges, onChange = param.onChange, title = param.title, selectedTheme = param.selectedTheme, _param_selectionMode = param.selectionMode, selectionMode = _param_selectionMode === void 0 ? "date-range" : _param_selectionMode, _param_weekStart = param.weekStart, weekStart = _param_weekStart === void 0 ? 0 : _param_weekStart, _param_fiscalYearStartMonth = param.fiscalYearStartMonth, fiscalYearStartMonth = _param_fiscalYearStartMonth === void 0 ? 0 : _param_fiscalYearStartMonth, _param_fiscalYearStartDay = param.fiscalYearStartDay, fiscalYearStartDay = _param_fiscalYearStartDay === void 0 ? 1 : _param_fiscalYearStartDay, _param_calendars = param.calendars, calendars = _param_calendars === void 0 ? 2 : _param_calendars, _param_disableWeekends = param.disableWeekends, disableWeekends = _param_disableWeekends === void 0 ? false : _param_disableWeekends, _param_disabledDates = param.disabledDates, disabledDates = _param_disabledDates === void 0 ? [] : _param_disabledDates, minRangeDays = param.minRangeDays, maxRangeDays = param.maxRangeDays, isDateDisabled = param.isDateDisabled, validateRange = param.validateRange, _param_locale = param.locale, locale = _param_locale === void 0 ? "en-GB" : _param_locale, dateFormatOptions = param.dateFormatOptions, yearFormatOptions = param.yearFormatOptions, _param_useLocaleWeekStart = param.useLocaleWeekStart, useLocaleWeekStart = _param_useLocaleWeekStart === void 0 ? false : _param_useLocaleWeekStart, _param_rtl = param.rtl, rtl = _param_rtl === void 0 ? false : _param_rtl, timeZone = param.timeZone, outputTimeZone = param.outputTimeZone, _param_showTimeZoneLabel = param.showTimeZoneLabel, showTimeZoneLabel = _param_showTimeZoneLabel === void 0 ? false : _param_showTimeZoneLabel;
     var _formatToParts_find;
     var _ref = _sliced_to_array((0, import_react.useState)(null), 2), startDate = _ref[0], setStartDate = _ref[1];
     var _ref1 = _sliced_to_array((0, import_react.useState)(null), 2), endDate = _ref1[0], setEndDate = _ref1[1];
@@ -439,20 +491,15 @@ var WeekdayDateRangePicker = function(param) {
     var resolvedWeekStart = useLocaleWeekStart ? getLocaleWeekStart(locale) : weekStart;
     var resolvedTimeZone = timeZone !== null && timeZone !== void 0 ? timeZone : Intl.DateTimeFormat().resolvedOptions().timeZone;
     var outputResolvedTimeZone = outputTimeZone !== null && outputTimeZone !== void 0 ? outputTimeZone : resolvedTimeZone;
-    var displayFormatter = new Intl.DateTimeFormat(locale, _object_spread_props(_object_spread({}, dateFormatOptions !== null && dateFormatOptions !== void 0 ? dateFormatOptions : {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit"
-    }), {
+    var resolvedDateFormatOptions = dateFormatOptions !== null && dateFormatOptions !== void 0 ? dateFormatOptions : defaultDateFormatOptions;
+    var resolvedYearFormatOptions = yearFormatOptions !== null && yearFormatOptions !== void 0 ? yearFormatOptions : defaultYearFormatOptions;
+    var displayFormatter = new Intl.DateTimeFormat(locale, _object_spread_props(_object_spread({}, resolvedDateFormatOptions), {
         timeZone: resolvedTimeZone
     }));
-    var outputFormatter = new Intl.DateTimeFormat(locale, _object_spread_props(_object_spread({}, dateFormatOptions !== null && dateFormatOptions !== void 0 ? dateFormatOptions : {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit"
-    }), {
+    var outputFormatter = new Intl.DateTimeFormat(locale, _object_spread_props(_object_spread({}, resolvedDateFormatOptions), {
         timeZone: outputResolvedTimeZone
     }));
+    var datePlaceholder = getDatePlaceholder(locale, resolvedDateFormatOptions, resolvedTimeZone);
     var numberFormatter = new Intl.NumberFormat(locale);
     var timeZoneOffset = (_formatToParts_find = new Intl.DateTimeFormat(locale, {
         timeZone: resolvedTimeZone,
@@ -499,6 +546,31 @@ var WeekdayDateRangePicker = function(param) {
             next[index] = year;
             return next;
         });
+    };
+    var alignCalendarsToMonth = function(date) {
+        setDisplayedDate(new Date(date.getFullYear(), date.getMonth(), 1));
+        var seeds = Array.from({
+            length: maxCalendars
+        }, function(_, index) {
+            var monthDate = new Date(date.getFullYear(), date.getMonth() + index, 1);
+            return {
+                month: monthDate.getMonth(),
+                year: monthDate.getFullYear()
+            };
+        });
+        setCalendarMonths(seeds.map(function(seed) {
+            return seed.month;
+        }));
+        setCalendarYears(seeds.map(function(seed) {
+            return seed.year;
+        }));
+    };
+    var commitDateRangeSelection = function(first, second) {
+        var _normalizeDateRange = _sliced_to_array(normalizeDateRange(first, second), 2), normalizedStart = _normalizeDateRange[0], normalizedEnd = _normalizeDateRange[1];
+        setStartDate(normalizedStart);
+        setEndDate(normalizedEnd);
+        setSelectedHoveringDates([]);
+        alignCalendarsToMonth(normalizedStart);
     };
     var handleDateRangeChange = function(startDate2, endDate2) {
         var _calculateWeekdaysAndWeekends = calculateWeekdaysAndWeekends(startDate2, endDate2), weekdays2 = _calculateWeekdaysAndWeekends.weekdays, weekends2 = _calculateWeekdaysAndWeekends.weekends;
@@ -607,17 +679,9 @@ var WeekdayDateRangePicker = function(param) {
         if (!startDate || endDate) {
             setStartDate(selectedDate);
             setEndDate(null);
-        } else {
-            if (selectedDate < startDate) {
-                if (isRangeValid(selectedDate, startDate)) {
-                    setEndDate(startDate);
-                    setStartDate(selectedDate);
-                }
-            } else {
-                if (isRangeValid(startDate, selectedDate)) {
-                    setEndDate(selectedDate);
-                }
-            }
+            setSelectedHoveringDates([]);
+        } else if (isRangeValid(startDate, selectedDate)) {
+            commitDateRangeSelection(startDate, selectedDate);
         }
     };
     var handleTextFieldClick = function() {
@@ -736,6 +800,9 @@ var WeekdayDateRangePicker = function(param) {
                 setSelectedHoveringDates(newSelectedDates2);
                 return;
             }
+            if (startDate && endDate) {
+                return;
+            }
             if (startDate && day) {
                 var newSelectedDates3 = [];
                 var fiveYearsInMs = 5 * 365 * 24 * 60 * 60 * 1e3;
@@ -744,21 +811,13 @@ var WeekdayDateRangePicker = function(param) {
                 if (dayMs < startDateMs - fiveYearsInMs || dayMs > startDateMs + fiveYearsInMs) {
                     return;
                 }
-                var currentDate = new Date(startDate);
-                if (day >= startDate) {
-                    while(currentDate <= day){
-                        if (!isDayDisabled(currentDate)) {
-                            newSelectedDates3.push(new Date(currentDate));
-                        }
-                        currentDate.setDate(currentDate.getDate() + 1);
+                var _normalizeDateRange = _sliced_to_array(normalizeDateRange(startDate, day), 2), previewStart = _normalizeDateRange[0], previewEnd = _normalizeDateRange[1];
+                var currentDate = new Date(previewStart);
+                while(currentDate <= previewEnd){
+                    if (!isDayDisabled(currentDate)) {
+                        newSelectedDates3.push(new Date(currentDate));
                     }
-                } else {
-                    while(currentDate >= day){
-                        if (!isDayDisabled(currentDate)) {
-                            newSelectedDates3.push(new Date(currentDate));
-                        }
-                        currentDate.setDate(currentDate.getDate() - 1);
-                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
                 }
                 setSelectedHoveringDates(newSelectedDates3);
             }
@@ -821,17 +880,21 @@ var WeekdayDateRangePicker = function(param) {
         var selectedHoveringMax = selectedHoveringDates.length ? new Date((_Math1 = Math).max.apply(_Math1, _to_consumable_array(selectedHoveringDates.map(function(day) {
             return day.getTime();
         })))) : null;
+        var hasPreviewRange = Boolean(startDate && !endDate && selectedHoveringDates.length);
+        var rangeStartDay = startDate && endDate ? startDate : hasPreviewRange ? selectedHoveringMin : startDate;
+        var rangeEndDay = startDate && endDate ? endDate : hasPreviewRange ? selectedHoveringMax : null;
         var getRangeClassName = function(day, isInRange, isSelected) {
             if (!day) {
                 return "day";
             }
-            var hasStart = Boolean(startDate);
             var hasConfirmedRange = Boolean(startDate && endDate);
-            var isRangeStart = hasConfirmedRange ? startDate && day.toDateString() === startDate.toDateString() : hasStart && startDate && day.toDateString() === startDate.toDateString();
-            var isRangeEnd = hasConfirmedRange ? endDate && day.toDateString() === endDate.toDateString() : false;
+            var isRangeStart = Boolean(rangeStartDay && isSameCalendarDay(day, rangeStartDay));
+            var isRangeEnd = Boolean(rangeEndDay && isSameCalendarDay(day, rangeEndDay));
             var isSingleRange = isRangeStart && isRangeEnd;
-            var isHoverRangeStart = selectedHoveringMin && day.toDateString() === selectedHoveringMin.toDateString();
-            var isHoverRangeEnd = selectedHoveringMax && day.toDateString() === selectedHoveringMax.toDateString();
+            var isHoverRangeStart = hasPreviewRange && selectedHoveringMin && isSameCalendarDay(day, selectedHoveringMin);
+            var isHoverRangeEnd = hasPreviewRange && selectedHoveringMax && isSameCalendarDay(day, selectedHoveringMax);
+            var isSegmentStart = Boolean(isInRange && !isRangeStart && isWeekRowStart(day, resolvedWeekStart));
+            var isSegmentEnd = Boolean(isInRange && !isRangeEnd && isWeekRowEnd(day, resolvedWeekStart));
             var classes = [
                 "day"
             ];
@@ -839,25 +902,25 @@ var WeekdayDateRangePicker = function(param) {
                 classes.push("disabled");
             }
             if (isInRange || isSelected) {
-                classes.push(isSelected ? "hover-range" : "in-range");
+                classes.push(isSelected && hasPreviewRange ? "hover-range" : "in-range");
             }
             if (isSingleRange) {
                 classes.push("range-single");
             } else {
-                if (isRangeStart) {
+                if (isRangeStart || isSegmentStart) {
                     classes.push(rtl ? "range-end" : "range-start");
                 }
-                if (isRangeEnd) {
+                if (isRangeEnd || isSegmentEnd) {
                     classes.push(rtl ? "range-start" : "range-end");
                 }
             }
-            if (isSelected && isHoverRangeStart) {
+            if (isHoverRangeStart) {
                 classes.push(rtl ? "hover-range-end" : "hover-range-start");
             }
-            if (isSelected && isHoverRangeEnd) {
+            if (isHoverRangeEnd) {
                 classes.push(rtl ? "hover-range-start" : "hover-range-end");
             }
-            if (isSelected && isHoverRangeStart && isHoverRangeEnd) {
+            if (isHoverRangeStart && isHoverRangeEnd) {
                 classes.push("hover-range-single");
             }
             return classes.join(" ");
@@ -893,7 +956,7 @@ var WeekdayDateRangePicker = function(param) {
                                                     children: generateYearOptions(config.year - 10, 21).map(function(year) {
                                                         return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", {
                                                             value: year,
-                                                            children: numberFormatter.format(year)
+                                                            children: formatYear(year, locale, resolvedYearFormatOptions, resolvedTimeZone)
                                                         }, year);
                                                     })
                                                 })
@@ -902,11 +965,11 @@ var WeekdayDateRangePicker = function(param) {
                                         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
                                             className: "calendar",
                                             role: "grid",
-                                            "aria-label": "".concat(new Intl.DateTimeFormat(locale, {
-                                                month: "long",
-                                                year: "numeric",
+                                            "aria-label": "".concat(new Intl.DateTimeFormat(locale, _object_spread_props(_object_spread({
+                                                month: "long"
+                                            }, resolvedYearFormatOptions), {
                                                 timeZone: resolvedTimeZone
-                                            }).format(new Date(Date.UTC(config.year, config.month, 1, 12)))),
+                                            })).format(new Date(Date.UTC(config.year, config.month, 1, 12)))),
                                             "aria-describedby": instructionsId,
                                             onMouseLeave: function() {
                                                 return setSelectedHoveringDates([]);
@@ -930,9 +993,9 @@ var WeekdayDateRangePicker = function(param) {
                                                             "aria-hidden": "true"
                                                         }, index);
                                                     }
-                                                    var isInRange = startDate && endDate && day && day >= startDate && day <= endDate;
-                                                    var isSelected = selectedHoveringDates.some(function(selectedDay) {
-                                                        return selectedDay.toDateString() === (day === null || day === void 0 ? void 0 : day.toDateString());
+                                                    var isInRange = Boolean(rangeStartDay && rangeEndDay && day >= rangeStartDay && day <= rangeEndDay);
+                                                    var isSelected = hasPreviewRange && selectedHoveringDates.some(function(selectedDay) {
+                                                        return isSameCalendarDay(selectedDay, day);
                                                     });
                                                     var isFiscalStartDate = selectionMode === "fiscal-week" && day ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay : false;
                                                     var isFocused = (focusedDate === null || focusedDate === void 0 ? void 0 : focusedDate.toDateString()) === day.toDateString();
@@ -953,7 +1016,7 @@ var WeekdayDateRangePicker = function(param) {
                                                         onFocus: function() {
                                                             return setFocusedDate(day);
                                                         },
-                                                        style: day ? getDayStyles(selectedTheme)(day, today, isInRange, isSelected, startDate, endDate, isWeekend(day), true, isFiscalStartDate) : {},
+                                                        style: day ? getDayStyles(selectedTheme)(day, today, isInRange, isSelected, rangeStartDay, rangeEndDay, isWeekend(day), true, isFiscalStartDate) : {},
                                                         children: numberFormatter.format(day.getDate())
                                                     }, index);
                                                 })
@@ -996,11 +1059,12 @@ var WeekdayDateRangePicker = function(param) {
         });
     };
     var handlePredefinedRange = function(range) {
-        var _range = _sliced_to_array(range, 2), start = _range[0], end = _range[1];
-        setStartDate(start);
-        setEndDate(end);
-        setDisplayedDate(new Date(start.getFullYear(), start.getMonth(), 1));
-        handleDateRangeChange(start, end);
+        var _normalizeDateRange = _sliced_to_array(normalizeDateRange(range[0], range[1]), 2), normalizedStart = _normalizeDateRange[0], normalizedEnd = _normalizeDateRange[1];
+        setStartDate(normalizedStart);
+        setEndDate(normalizedEnd);
+        setSelectedHoveringDates([]);
+        alignCalendarsToMonth(normalizedStart);
+        handleDateRangeChange(normalizedStart, normalizedEnd);
     };
     var monthOptions = Array.from({
         length: 12
@@ -1075,7 +1139,7 @@ var WeekdayDateRangePicker = function(param) {
                                         type: "text",
                                         readOnly: true,
                                         value: startDate ? displayFormatter.format(startDate) : "",
-                                        placeholder: "DD/MM/YY",
+                                        placeholder: datePlaceholder,
                                         onClick: handleTextFieldClick,
                                         className: "date-range-input"
                                     })
@@ -1091,7 +1155,7 @@ var WeekdayDateRangePicker = function(param) {
                                         type: "text",
                                         readOnly: true,
                                         value: endDate ? displayFormatter.format(endDate) : "",
-                                        placeholder: "DD/MM/YY",
+                                        placeholder: datePlaceholder,
                                         onClick: handleTextFieldClick,
                                         className: "date-range-input"
                                     })

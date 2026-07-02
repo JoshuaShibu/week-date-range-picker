@@ -72,7 +72,7 @@
 }
 .weekday-date-range-picker .calendar-grid {
   display: flex;
-  justify-content: space-evenly;
+  gap: 20px;
 }
 .weekday-date-range-picker.rtl .calendar-grid {
   flex-direction: row-reverse;

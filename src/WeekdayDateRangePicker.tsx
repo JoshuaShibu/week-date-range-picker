@@ -10,7 +10,15 @@ import {
   getIsoWeekRange,
   getWeekRange,
   getFiscalWeekRange,
-  getLocaleWeekStart
+  getLocaleWeekStart,
+  formatYear,
+  getDatePlaceholder,
+  defaultDateFormatOptions,
+  defaultYearFormatOptions,
+  normalizeDateRange,
+  isSameCalendarDay,
+  isWeekRowStart,
+  isWeekRowEnd
 } from './helpers';
 
 type DateRange = [Date, Date];
@@ -46,6 +54,7 @@ export interface WeekdayDateRangePickerProps {
   validateRange?: (start: Date, end: Date) => boolean;
   locale?: string;
   dateFormatOptions?: Intl.DateTimeFormatOptions;
+  yearFormatOptions?: Pick<Intl.DateTimeFormatOptions, 'year' | 'calendar' | 'numberingSystem'>;
   useLocaleWeekStart?: boolean;
   rtl?: boolean;
   timeZone?: string;
@@ -71,6 +80,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   validateRange,
   locale = 'en-GB',
   dateFormatOptions,
+  yearFormatOptions,
   useLocaleWeekStart = false,
   rtl = false,
   timeZone,
@@ -97,14 +107,17 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   const resolvedWeekStart = useLocaleWeekStart ? getLocaleWeekStart(locale) : weekStart;
   const resolvedTimeZone = timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const outputResolvedTimeZone = outputTimeZone ?? resolvedTimeZone;
+  const resolvedDateFormatOptions = dateFormatOptions ?? defaultDateFormatOptions;
+  const resolvedYearFormatOptions = yearFormatOptions ?? defaultYearFormatOptions;
   const displayFormatter = new Intl.DateTimeFormat(
     locale,
-    { ...(dateFormatOptions ?? { day: '2-digit', month: '2-digit', year: '2-digit' }), timeZone: resolvedTimeZone }
+    { ...resolvedDateFormatOptions, timeZone: resolvedTimeZone }
   );
   const outputFormatter = new Intl.DateTimeFormat(
     locale,
-    { ...(dateFormatOptions ?? { day: '2-digit', month: '2-digit', year: '2-digit' }), timeZone: outputResolvedTimeZone }
+    { ...resolvedDateFormatOptions, timeZone: outputResolvedTimeZone }
   );
+  const datePlaceholder = getDatePlaceholder(locale, resolvedDateFormatOptions, resolvedTimeZone);
   const numberFormatter = new Intl.NumberFormat(locale);
   const timeZoneOffset = new Intl.DateTimeFormat(locale, { timeZone: resolvedTimeZone, timeZoneName: 'shortOffset' })
     .formatToParts(new Date())
@@ -140,6 +153,24 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       next[index] = year;
       return next;
     });
+  };
+
+  const alignCalendarsToMonth = (date: Date) => {
+    setDisplayedDate(new Date(date.getFullYear(), date.getMonth(), 1));
+    const seeds = Array.from({ length: maxCalendars }, (_, index) => {
+      const monthDate = new Date(date.getFullYear(), date.getMonth() + index, 1);
+      return { month: monthDate.getMonth(), year: monthDate.getFullYear() };
+    });
+    setCalendarMonths(seeds.map((seed) => seed.month));
+    setCalendarYears(seeds.map((seed) => seed.year));
+  };
+
+  const commitDateRangeSelection = (first: Date, second: Date) => {
+    const [normalizedStart, normalizedEnd] = normalizeDateRange(first, second);
+    setStartDate(normalizedStart);
+    setEndDate(normalizedEnd);
+    setSelectedHoveringDates([]);
+    alignCalendarsToMonth(normalizedStart);
   };
 
   const handleDateRangeChange = (startDate: Date, endDate: Date) => {
@@ -253,17 +284,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     if (!startDate || endDate) {
       setStartDate(selectedDate);
       setEndDate(null);
-    } else {
-      if (selectedDate < startDate) {
-        if (isRangeValid(selectedDate, startDate)) {
-          setEndDate(startDate);
-          setStartDate(selectedDate);
-        }
-      } else {
-        if (isRangeValid(startDate, selectedDate)) {
-          setEndDate(selectedDate);
-        }
-      }
+      setSelectedHoveringDates([]);
+    } else if (isRangeValid(startDate, selectedDate)) {
+      commitDateRangeSelection(startDate, selectedDate);
     }
   };
 
@@ -380,6 +403,10 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
         return;
       }
 
+      if (startDate && endDate) {
+        return;
+      }
+
       if (startDate && day) {
         let newSelectedDates: Date[] = [];
 
@@ -391,22 +418,14 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
           return;
         }
 
-        const currentDate = new Date(startDate);
+        const [previewStart, previewEnd] = normalizeDateRange(startDate, day);
+        const currentDate = new Date(previewStart);
 
-        if (day >= startDate) {
-          while (currentDate <= day) {
-            if (!isDayDisabled(currentDate)) {
-              newSelectedDates.push(new Date(currentDate));
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
+        while (currentDate <= previewEnd) {
+          if (!isDayDisabled(currentDate)) {
+            newSelectedDates.push(new Date(currentDate));
           }
-        } else {
-          while (currentDate >= day) {
-            if (!isDayDisabled(currentDate)) {
-              newSelectedDates.push(new Date(currentDate));
-            }
-            currentDate.setDate(currentDate.getDate() - 1);
-          }
+          currentDate.setDate(currentDate.getDate() + 1);
         }
         setSelectedHoveringDates(newSelectedDates);
       }
@@ -472,47 +491,59 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
     const selectedHoveringMax = selectedHoveringDates.length
       ? new Date(Math.max(...selectedHoveringDates.map((day) => day.getTime())))
       : null;
+    const hasPreviewRange = Boolean(startDate && !endDate && selectedHoveringDates.length);
+    const rangeStartDay = startDate && endDate
+      ? startDate
+      : hasPreviewRange
+        ? selectedHoveringMin
+        : startDate;
+    const rangeEndDay = startDate && endDate
+      ? endDate
+      : hasPreviewRange
+        ? selectedHoveringMax
+        : null;
 
     const getRangeClassName = (day: Date | null, isInRange: boolean, isSelected: boolean) => {
       if (!day) {
         return 'day';
       }
-      const hasStart = Boolean(startDate);
       const hasConfirmedRange = Boolean(startDate && endDate);
-      const isRangeStart = hasConfirmedRange
-        ? startDate && day.toDateString() === startDate.toDateString()
-        : hasStart && startDate && day.toDateString() === startDate.toDateString();
-      const isRangeEnd = hasConfirmedRange
-        ? endDate && day.toDateString() === endDate.toDateString()
-        : false;
+      const isRangeStart = Boolean(rangeStartDay && isSameCalendarDay(day, rangeStartDay));
+      const isRangeEnd = Boolean(rangeEndDay && isSameCalendarDay(day, rangeEndDay));
       const isSingleRange = isRangeStart && isRangeEnd;
-      const isHoverRangeStart = selectedHoveringMin && day.toDateString() === selectedHoveringMin.toDateString();
-      const isHoverRangeEnd = selectedHoveringMax && day.toDateString() === selectedHoveringMax.toDateString();
+      const isHoverRangeStart = hasPreviewRange && selectedHoveringMin && isSameCalendarDay(day, selectedHoveringMin);
+      const isHoverRangeEnd = hasPreviewRange && selectedHoveringMax && isSameCalendarDay(day, selectedHoveringMax);
+      const isSegmentStart = Boolean(
+        isInRange && !isRangeStart && isWeekRowStart(day, resolvedWeekStart)
+      );
+      const isSegmentEnd = Boolean(
+        isInRange && !isRangeEnd && isWeekRowEnd(day, resolvedWeekStart)
+      );
 
       const classes = ['day'];
       if (isDayDisabled(day)) {
         classes.push('disabled');
       }
       if (isInRange || isSelected) {
-        classes.push(isSelected ? 'hover-range' : 'in-range');
+        classes.push(isSelected && hasPreviewRange ? 'hover-range' : 'in-range');
       }
       if (isSingleRange) {
         classes.push('range-single');
       } else {
-        if (isRangeStart) {
+        if (isRangeStart || isSegmentStart) {
           classes.push(rtl ? 'range-end' : 'range-start');
         }
-        if (isRangeEnd) {
+        if (isRangeEnd || isSegmentEnd) {
           classes.push(rtl ? 'range-start' : 'range-end');
         }
       }
-      if (isSelected && isHoverRangeStart) {
+      if (isHoverRangeStart) {
         classes.push(rtl ? 'hover-range-end' : 'hover-range-start');
       }
-      if (isSelected && isHoverRangeEnd) {
+      if (isHoverRangeEnd) {
         classes.push(rtl ? 'hover-range-start' : 'hover-range-end');
       }
-      if (isSelected && isHoverRangeStart && isHoverRangeEnd) {
+      if (isHoverRangeStart && isHoverRangeEnd) {
         classes.push('hover-range-single');
       }
       return classes.join(' ');
@@ -530,6 +561,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                   className="month-main-wrapper"
                   id={`calendar-${calendarIndex}`}
                 >
+                  {/* MONTH LABEL */}
                   <div className="month-label">
                     <select
                       value={config.month}
@@ -542,31 +574,40 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                       onChange={(e) => changeCalendarYear(calendarIndex, Number(e.target.value))}
                     >
                       {generateYearOptions(config.year - 10, 21).map((year) => (
-                        <option key={year} value={year}>{numberFormatter.format(year)}</option>
+                        <option key={year} value={year}>
+                          {formatYear(year, locale, resolvedYearFormatOptions, resolvedTimeZone)}
+                        </option>
                       ))}
                     </select>
                   </div>
+                  {/* CALENDAR */}
                   <div
                     className="calendar"
                     role="grid"
-                    aria-label={`${new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: resolvedTimeZone }).format(new Date(Date.UTC(config.year, config.month, 1, 12)))}`}
+                    aria-label={`${new Intl.DateTimeFormat(locale, { month: 'long', ...resolvedYearFormatOptions, timeZone: resolvedTimeZone }).format(new Date(Date.UTC(config.year, config.month, 1, 12)))}`}
                     aria-describedby={instructionsId}
                     onMouseLeave={() => setSelectedHoveringDates([])}
                     onKeyDown={handleGridKeyDown}
                   >
+                    {/* DAY LABELS */}
                     <div className="day-labels">
                       {dayLabels.map((label) => (
                         <div key={label} className="day-label" role="columnheader">{label}</div>
                       ))}
                     </div>
+                    {/* DAYS */}
                     {days.map((day, index) => {
                       if (!day) {
                         return <div key={index} className="day empty" aria-hidden="true" />;
                       }
-                      const isInRange = startDate && endDate && day &&
-                        day >= startDate && day <= endDate;
-                      const isSelected = selectedHoveringDates.some(
-                        (selectedDay) => selectedDay.toDateString() === day?.toDateString()
+                      const isInRange = Boolean(
+                        rangeStartDay &&
+                        rangeEndDay &&
+                        day >= rangeStartDay &&
+                        day <= rangeEndDay
+                      );
+                      const isSelected = hasPreviewRange && selectedHoveringDates.some(
+                        (selectedDay) => isSameCalendarDay(selectedDay, day)
                       );
                       const isFiscalStartDate = selectionMode === 'fiscal-week' && day
                         ? day.getMonth() === fiscalYearStartMonth && day.getDate() === fiscalYearStartDay
@@ -590,8 +631,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
                             today,
                             isInRange,
                             isSelected,
-                            startDate,
-                            endDate,
+                            rangeStartDay,
+                            rangeEndDay,
                             isWeekend(day),
                             true,
                             isFiscalStartDate
@@ -606,6 +647,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
               );
             })}
           </div>
+          {/* PREDEFINED RANGES */}
           <div className="predefined-ranges">
             {predefinedRangesList.map(({ label, range }, index) => (
               <button key={index} onClick={() => handlePredefinedRange(range)}>
@@ -614,6 +656,8 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
             ))}
           </div>
         </div>
+
+        {/* FOOTER BUTTONS */}
         <div className="calendar-footer">
           <button className="pick-button" onClick={handlePickClick} >Pick</button>
           <button className="reset-button" onClick={resetDates}>Reset Dates</button>
@@ -624,11 +668,12 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   };
 
   const handlePredefinedRange = (range: DateRange) => {
-    const [start, end] = range;
-    setStartDate(start);
-    setEndDate(end);
-    setDisplayedDate(new Date(start.getFullYear(), start.getMonth(), 1));
-    handleDateRangeChange(start, end);
+    const [normalizedStart, normalizedEnd] = normalizeDateRange(range[0], range[1]);
+    setStartDate(normalizedStart);
+    setEndDate(normalizedEnd);
+    setSelectedHoveringDates([]);
+    alignCalendarsToMonth(normalizedStart);
+    handleDateRangeChange(normalizedStart, normalizedEnd);
   };
 
   const monthOptions = Array.from({ length: 12 }, (_, i) => (
@@ -684,7 +729,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
               type="text"
               readOnly={true}
               value={startDate ? displayFormatter.format(startDate) : ''}
-              placeholder="DD/MM/YY"
+              placeholder={datePlaceholder}
               onClick={handleTextFieldClick}
               className="date-range-input"
             />
@@ -695,7 +740,7 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
               type="text"
               readOnly={true}
               value={endDate ? displayFormatter.format(endDate) : ''}
-              placeholder="DD/MM/YY"
+              placeholder={datePlaceholder}
               onClick={handleTextFieldClick}
               className="date-range-input"
             />

@@ -5,11 +5,10 @@ import React , { useState, useEffect} from 'react';
 import WeekdayDateRangePicker from './WeekdayDateRangePicker';
 import { colorSchemas } from './theme/colorSchemas';
 import ThemePicker from './themePicker';
-import { ThemeProvider, useTheme } from './themContext'
+import { ThemeProvider } from './themContext'
 function App() {
   const handleRangeChange = (range: [string[], string[]]) => {
-    console.log('Selected Range:', range[0]);
-    console.log('Weekend Dates:', range[1]);
+    console.log('Selected Range:', range);
   };
 
   const predefinedRanges: [Date, Date][] = [
@@ -24,9 +23,8 @@ function App() {
   const [calendars, setCalendars] = useState<1 | 2 | 3>(2);
   const [locale, setLocale] = useState<string>('en-GB');
   const [useLocaleWeekStart, setUseLocaleWeekStart] = useState<boolean>(true);
-  useEffect(() => {
-    console.log(theme)
-  }, [theme])
+  const [yearFormat, setYearFormat] = useState<'numeric' | '2-digit'>('numeric');
+
   return (
     <ThemeProvider>
       <div className="App">
@@ -123,6 +121,17 @@ function App() {
               </select>
             </div>
             <div className="config-field">
+              <label htmlFor="year-format">Year Format</label>
+              <select
+                id="year-format"
+                value={yearFormat}
+                onChange={(event) => setYearFormat(event.target.value as 'numeric' | '2-digit')}
+              >
+                <option value="numeric">Full year (2026)</option>
+                <option value="2-digit">Short year (26)</option>
+              </select>
+            </div>
+            <div className="config-field">
               <label htmlFor="locale-week-start">Locale Week Start</label>
               <select
                 id="locale-week-start"
@@ -150,6 +159,8 @@ function App() {
               calendars={calendars}
               locale={locale}
               useLocaleWeekStart={useLocaleWeekStart}
+              yearFormatOptions={{ year: yearFormat }}
+              dateFormatOptions={{ day: '2-digit', month: '2-digit', year: yearFormat }}
             />
           </main>
         </div>

@@ -37,6 +37,76 @@ export const generateYearOptions = (startYear: number, length: number) => {
   return Array.from({ length }, (_, index) => startYear + index);
 };
 
+const defaultDateFormatOptions: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+};
+
+const defaultYearFormatOptions: Pick<Intl.DateTimeFormatOptions, 'year' | 'calendar' | 'numberingSystem'> = {
+  year: 'numeric',
+};
+
+export const formatYear = (
+  year: number,
+  locale: string,
+  options: Pick<Intl.DateTimeFormatOptions, 'year' | 'calendar' | 'numberingSystem'> = defaultYearFormatOptions,
+  timeZone?: string
+): string => {
+  return new Intl.DateTimeFormat(locale, {
+    ...options,
+    ...(timeZone ? { timeZone } : {}),
+  }).format(new Date(year, 6, 1));
+};
+
+export const getDatePlaceholder = (
+  locale: string,
+  options: Intl.DateTimeFormatOptions = defaultDateFormatOptions,
+  timeZone?: string
+): string => {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    ...options,
+    ...(timeZone ? { timeZone } : {}),
+  });
+
+  return formatter
+    .formatToParts(new Date(2026, 11, 31))
+    .map((part) => {
+      switch (part.type) {
+        case 'day':
+          return 'DD';
+        case 'month':
+          return 'MM';
+        case 'year':
+          return options.year === '2-digit' ? 'YY' : 'YYYY';
+        case 'literal':
+          return part.value;
+        default:
+          return '';
+      }
+    })
+    .join('')
+    .trim();
+};
+
+export { defaultDateFormatOptions, defaultYearFormatOptions };
+
+export const normalizeDateRange = (first: Date, second: Date): [Date, Date] => {
+  return first.getTime() <= second.getTime() ? [first, second] : [second, first];
+};
+
+export const isSameCalendarDay = (left: Date, right: Date): boolean => {
+  return left.toDateString() === right.toDateString();
+};
+
+export const isWeekRowStart = (day: Date, weekStart: 0 | 1): boolean => {
+  return day.getDay() === weekStart;
+};
+
+export const isWeekRowEnd = (day: Date, weekStart: 0 | 1): boolean => {
+  return day.getDay() === ((weekStart + 6) % 7);
+};
+
 // Function to generate days for a given month
 export const generateDays = (startOfMonth: Date, endOfMonth: Date, weekStart: 0 | 1 = 0) => {
   const days = [];

@@ -31,6 +31,7 @@ interface WeekdayDateRangePickerProps {
     validateRange?: (start: Date, end: Date) => boolean;
     locale?: string;
     dateFormatOptions?: Intl.DateTimeFormatOptions;
+    yearFormatOptions?: Pick<Intl.DateTimeFormatOptions, 'year' | 'calendar' | 'numberingSystem'>;
     useLocaleWeekStart?: boolean;
     rtl?: boolean;
     timeZone?: string;
