@@ -172,11 +172,15 @@
   font-size: 1.2em;
 }
 .weekday-date-range-picker .day-labels {
-  display: contents;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-column: 1 / -1;
+  margin-bottom: 10px;
 }
 .weekday-date-range-picker .day-label {
   text-align: center;
   font-weight: bold;
+  padding-bottom: 2px;
 }
 .weekday-date-range-picker .calendar-footer {
   padding: 10px;

@@ -161,6 +161,12 @@ function App() {
               useLocaleWeekStart={useLocaleWeekStart}
               yearFormatOptions={{ year: yearFormat }}
               dateFormatOptions={{ day: '2-digit', month: '2-digit', year: yearFormat }}
+              renderFooter={({ pick, reset }) => (
+                <>
+                  <button className="pick-button" onClick={pick}>Pick</button>
+                  <button className="reset-button" onClick={reset}>Reset Dates</button>
+                </>
+              )}
             />
           </main>
         </div>

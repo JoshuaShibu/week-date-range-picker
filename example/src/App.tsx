@@ -16,7 +16,7 @@ export default function App() {
       <WeekdayDateRangePicker
         title="Custom Date Range Picker"
         selectedTheme={theme}
-        onChange={([weekdays, weekends]) => {
+        onChange={([weekdays, weekends]: [Date[], Date[]]): void => {
           console.log('Weekdays are :', weekdays);
           console.log('Weekends:', weekends);
         }}

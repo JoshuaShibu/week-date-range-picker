@@ -22,7 +22,6 @@ import {
 } from './helpers';
 
 type DateRange = [Date, Date];
-type WeekendDates = Date[];
 type colorSchemaTypes = {
   primary: string;
   secondary: string;
@@ -37,9 +36,9 @@ type colorSchemaTypes = {
 };
 
 export interface WeekdayDateRangePickerProps {
+  title?: string;
   predefinedRanges?: DateRange[];
   onChange: (range: [string[], string[]]) => void;
-  title?: string;
   selectedTheme: colorSchemaTypes;
   selectionMode?: 'date-range' | 'iso-week' | 'week' | 'fiscal-week';
   weekStart?: 0 | 1;
@@ -60,12 +59,13 @@ export interface WeekdayDateRangePickerProps {
   timeZone?: string;
   outputTimeZone?: string;
   showTimeZoneLabel?: boolean;
+  showFooterButtons?: boolean;
+  renderFooter?: (actions: { pick: () => void; reset: () => void }) => React.ReactNode;
 }
 
 const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
-  predefinedRanges = [],
-  onChange,
   title,
+  onChange,
   selectedTheme,
   selectionMode = 'date-range',
   weekStart = 0,
@@ -80,12 +80,13 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
   validateRange,
   locale = 'en-GB',
   dateFormatOptions,
-  yearFormatOptions,
+  yearFormatOptions,  
   useLocaleWeekStart = false,
   rtl = false,
   timeZone,
   outputTimeZone,
-  showTimeZoneLabel = false
+  showTimeZoneLabel = false,
+  renderFooter
 }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -656,12 +657,10 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
             ))}
           </div>
         </div>
-
-        {/* FOOTER BUTTONS */}
-        <div className="calendar-footer">
-          <button className="pick-button" onClick={handlePickClick} >Pick</button>
-          <button className="reset-button" onClick={resetDates}>Reset Dates</button>
-        </div>
+        {renderFooter && (
+          <div className="calendar-footer" role="group" aria-label="Calendar footer buttons">
+            {renderFooter({ pick: handlePickClick, reset: resetDates })}
+          </div>)}
       </div>
 
     );
@@ -710,6 +709,9 @@ const WeekdayDateRangePicker: React.FC<WeekdayDateRangePickerProps> = ({
       className={`weekday-date-range-picker date-picker-container${selectedTheme.usePlaceboShadow ? ' placebo-theme' : ''}${rtl ? ' rtl' : ''}`}
       dir={rtl ? 'rtl' : 'ltr'}
     >
+      {title && (
+        <h2 className="picker-title">{title}</h2>
+      )}
       <div className="input-wrapper">
         <p id={instructionsId} className="sr-only">
           Use arrow keys to move between dates. Press Enter or Space to select. Press Escape to close.
